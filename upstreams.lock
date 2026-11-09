@@ -1,0 +1,62 @@
+# ksre-ps5 pinned upstream revisions.
+#
+# Shell-sourceable KEY=VALUE file (no spaces around '='). Consumed by
+# tools/fetch-sdk.sh and tools/fetch-upstreams.sh. Researched 2026-11-08.
+# Change a pin only together with a note in docs/ARCHITECTURE.md explaining
+# why, and re-run the affected experiments.
+
+# --- Game: Katawa Shoujo: Re-Engineered -------------------------------------
+# Canonical development happens on Codeberg; the GitHub repository is an
+# explicitly labelled read-only mirror (verified in sync at research time).
+KSRE_URL=https://codeberg.org/fhs/katawa-shoujo-re-engineered.git
+KSRE_MIRROR_URL=https://github.com/fleetingheart/ksre.git
+KSRE_TAG=v2.0.5
+KSRE_COMMIT=95b905bab8a9e8c51d02afd9ee8bc0e3762397ca
+
+# --- Engine: Ren'Py (version KSRE v2.0.5 release CI builds with) ------------
+# KSRE .forgejo/workflows/release.yml sets RENPY_VERSION: 8.5.3; the official
+# 8.5.3 SDK's renpy/vc_version.py reports 8.5.3.26051504.
+RENPY_URL=https://github.com/renpy/renpy.git
+RENPY_TAG=8.5.3.26051504
+RENPY_COMMIT=39895c1e017f0b36ffea2447d97eccd69d76ee1c
+RENPY_BUILD_URL=https://github.com/renpy/renpy-build.git
+RENPY_BUILD_TAG=renpy-8.5.3.26051504
+RENPY_BUILD_COMMIT=7bfab40c1174f622f644b24669afd5fb167fbb79
+# Versions renpy-build uses for 8.5.3 (tasks/*.py, requirements.txt):
+CPYTHON_VERSION=3.12.8
+CYTHON_VERSION=3.1.4
+
+# --- PS5 payload SDK (binary release; host LLVM/clang + lld required) -------
+PS5_SDK_REPO=https://github.com/ps5-payload-dev/sdk.git
+PS5_SDK_RELEASE=v0.45
+PS5_SDK_RELEASE_COMMIT=a7685ce8e97ce1f8a4f38253a41d54241c9124f1
+PS5_SDK_ZIP_URL=https://github.com/ps5-payload-dev/sdk/releases/download/v0.45/ps5-payload-sdk.zip
+PS5_SDK_ZIP_SHA256=5fac64093d0e3e69f2584ce7935f24f703f622d9681f1495c85b9f00d1291a2c
+
+# --- PS5 dependency bundles (pacbrew-repo binary releases) ------------------
+# v0.41.1: Mesa 26.2.0 RADV-on-AGC + zink + EGL "videoout"; SDL2 patched for
+#          EGL/GL/GLES/Vulkan through Mesa (hardware GL path, experimental).
+# v0.40.3: Mesa 22.1.7 OSMesa (gallium swrast, LLVM enabled); SDL2 OSMesa
+#          backend (software GL fallback path).
+PACBREW_REPO=https://github.com/ps5-payload-dev/pacbrew-repo.git
+PACBREW_COMMIT=722187f0ee246c0d7d57401c8a97de1c7f4e2ff0
+PACBREW_HWGL_RELEASE=v0.41.1
+PACBREW_HWGL_URL=https://github.com/ps5-payload-dev/pacbrew-repo/releases/download/v0.41.1/ps5-payload-dev.tar.gz
+PACBREW_HWGL_SHA256=e811bc2e4676c5bb7f80a8fe928d2985dce599996a5ca6b54da3e72699287887
+PACBREW_SWGL_RELEASE=v0.40.3
+PACBREW_SWGL_URL=https://github.com/ps5-payload-dev/pacbrew-repo/releases/download/v0.40.3/ps5-payload-dev.tar.gz
+PACBREW_SWGL_SHA256=0d71dd90c4ad6ef562923be0eb87ca8ce47825b6a2f209e04bb5d57d3359aee8
+
+PS5_SDL_URL=https://github.com/ps5-payload-dev/SDL.git
+PS5_SDL_BRANCH=release-2.30.x-ps5
+PS5_SDL_COMMIT=ee4c47dc0d617b3bc8f35108f9956baf228a1322
+
+# --- Console-side loaders (run on the PS5; not linked into this project) ----
+ELFLDR_REPO=https://github.com/ps5-payload-dev/elfldr.git
+ELFLDR_COMMIT=2a8da002e5292481ea964daa7342bbf4855f4c33
+ELFLDR_RELEASE=v0.27
+ELFLDR_ELF_SHA256=82f6227610172c98bad6efe68219fc93a10027035991f47eb4b75532d023407d
+WEBSRV_REPO=https://github.com/ps5-payload-dev/websrv.git
+WEBSRV_COMMIT=7748df9d2a43822a5ebfda149f43d4f2696d640b
+WEBSRV_RELEASE=v0.35
+WEBSRV_ELF_SHA256=25501b41887a42789792d1367edd2fc892454bfe6b0b1519bc36456a581f264c

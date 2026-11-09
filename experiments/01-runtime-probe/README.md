@@ -1,0 +1,48 @@
+# Experiment 01 — runtime capability probe
+
+**Question:** does the PS5 payload runtime provide what CPython 3.12 and
+Ren'Py 8.5.3 need, and which GL fallback is possible?
+
+One payload checks, with evidence from the real runtime:
+
+| Area | Checks | Why it matters |
+|---|---|---|
+| platform | uname, sysctl, rlimits, firmware version and model (via run-time `dlsym`), presence of `/data`, `/user/homebrew`, USB mounts | compatibility records; storage layout |
+| time | monotonic sleep accuracy, realtime clock, local time, tz | CPython `time`, Ren'Py frame pacing |
+| signals | `sigaction`+`raise`, ignoring SIGPIPE | CPython start-up, `signal` module |
+| threads | 4 threads with atomics/mutex, `__thread` (emulated TLS), pthread keys, monotonic `pthread_cond_timedwait`, 16 MiB thread stack | CPython thread state, GIL, Ren'Py worker threads |
+| locale | `setlocale`, `nl_langinfo(CODESET)`, UTF-8 `mbstowcs` | CPython filesystem encoding / UTF-8 mode |
+| ipc/net | pipe, poll, select, kqueue, AF_UNIX socketpair, loopback TCP, getaddrinfo | `asyncio` (imported by KSRE), `selectors` |
+| entropy | `/dev/urandom`, `arc4random_buf`, `getentropy` | `os.urandom`, hash randomisation |
+| float | `%.17g`, `strtod` subnormals, libm | CPython float repr/parsing |
+| dl | `dlsym(RTLD_DEFAULT)`, missing-library error, loading `libSceRandom.sprx`, run-time resolvability of ~60 POSIX names | SDL loads Mesa with `dlopen`; CPython `posixmodule` |
+| storage | mkdir, 1 MiB write+fsync+read, rename/unlink, mkstemp, readdir, free space, run counter | saves, persistent data, `.rpyc` cache |
+| jit | W^X (RW→RX) and RWX executable memory | viability of an LLVM-JIT software rasteriser (llvmpipe) |
+| memory | allocate and touch up to 2 GiB | Ren'Py image cache, video buffers |
+
+Risky checks run under a SIGSEGV/SIGBUS/SIGILL guard. The memory check runs
+last. The probe writes only inside `/data/ksre-ps5/` and prints no serial
+numbers, account data or network addresses.
+
+The same source builds for Linux and macOS so CI can test the probe logic.
+**Host results are not PS5 evidence.**
+
+## Build and run
+
+See `docs/BUILDING.md` and `docs/CONSOLE_TESTING.md`. In short:
+
+```sh
+make run-host            # host logic test
+make ps5                 # payload (needs PS5_PAYLOAD_SDK and LLVM + lld)
+make ps5-compile-check   # compile-only for the PS5 target with Apple clang
+make link-inventory      # link tests used to prepare CPython's configure
+make deploy              # send to the console configured in .local-config/console.env
+```
+
+## Results
+
+| Date | Where | Result |
+|---|---|---|
+| 2026-11-08 | host: macOS 27.2 arm64 | 28 pass, 0 fail, 1 skip (logic test only) |
+| 2026-11-08 | compile-only for `x86_64-sie-ps5` (Apple clang 21, SDK v0.45 headers) | object file produced; not linked |
+| — | PS5 console | not yet run |

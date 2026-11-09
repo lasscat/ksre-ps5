@@ -1,0 +1,83 @@
+# ---------------------------------------------------------------------------
+# ksre-ps5 ignore rules
+#
+# These rules were written BEFORE any private notes, downloads, or staging.
+# Remember: .gitignore does not untrack files that are already tracked and
+# does not rewrite history. Run tools/publication-check.sh before every push.
+# ---------------------------------------------------------------------------
+
+# --- Personal workflow (plans, prompts, model choices, handoffs, logs) -------
+/.local-work/
+/.local-config/
+
+# --- Upstream checkouts and dependency worktrees ----------------------------
+/external/
+
+# --- Game data (KSRE assets/scripts supplied locally by the user) ----------
+/game-data/
+
+# --- Generated output -------------------------------------------------------
+/build/
+/dist/
+/out/
+*.elf
+*.self
+*.bin
+*.pkg
+*.o
+*.a
+*.so
+*.dylib
+*.d
+*.pyc
+__pycache__/
+
+# --- Claude Code local state ------------------------------------------------
+/.claude/settings.local.json
+/.claude/*.local.*
+/CLAUDE.local.md
+.claude/todos/
+.claude/projects/
+
+# --- Secrets and local environment -----------------------------------------
+.env
+.env.*
+!.env.example
+*.env
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+*.netrc
+.netrc
+secrets/
+credentials*
+
+# --- Ren'Py / game runtime state ------------------------------------------
+saves/
+*.save
+persistent
+log.txt
+errors.txt
+traceback.txt
+*.rpyc
+*.rpymc
+cache/
+
+# --- Crash dumps and console logs -------------------------------------------
+*.core
+core
+core.*
+*.dmp
+*.crash
+*.log
+klog*.txt
+
+# --- Editor / OS noise ----------------------------------------------------
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~

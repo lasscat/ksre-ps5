@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# CI never needs game data, console access or private configuration.
+# It uploads only the compiled probe payload, never logs.
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publication-check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Publication check (HEAD tree)
+        run: python3 tools/publication_check.py --tracked
+      - name: Publication check (all history, including author e-mails)
+        run: python3 tools/publication_check.py --all-history
+      - name: Shell script lint
+        run: shellcheck -x tools/*.sh tools/lib/common.sh experiments/01-runtime-probe/link-inventory.sh
+
+  host-probe:
+    # Logic test of the probe on ordinary hosts. Not evidence about the PS5.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build and run probe on host
+        run: |
+          make -C experiments/01-runtime-probe run-host | tee "$RUNNER_TEMP/probe.txt"
+          grep -q '^KSRE_PS5_PROBE_END .* fail=0 ' "$RUNNER_TEMP/probe.txt"
+
+  ps5-cross-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install host LLVM 18 (the version the SDK's own CI uses)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q clang-18 lld-18 llvm-18
+      - name: Fetch pinned ps5-payload-sdk (SHA-256 verified)
+        run: |
+          tools/fetch-sdk.sh | tee "$RUNNER_TEMP/sdk.txt"
+          grep '^export PS5_PAYLOAD_SDK=' "$RUNNER_TEMP/sdk.txt" | sed 's/^export //; s/"//g' >> "$GITHUB_ENV"
+      - name: Environment check (milestone 1)
+        run: tools/check-env.sh --milestone 1
+      - name: Cross-compile and link the probe payload
+        run: |
+          make -C experiments/01-runtime-probe ps5
+          elf=build/experiments/01-runtime-probe/ps5/ksre-ps5-probe.elf
+          file "$elf"
+          readelf -h "$elf" | grep -E 'Class|Machine|Type'
+          readelf -d "$elf" | grep NEEDED || true
+          sha256sum "$elf"
+      - name: Link inventory for CPython configure
+        run: make -C experiments/01-runtime-probe link-inventory
+      - name: Upload probe payload (compiled output only)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ksre-ps5-probe-elf
+          path: build/experiments/01-runtime-probe/ps5/ksre-ps5-probe.elf
+          retention-days: 14
+          if-no-files-found: error
