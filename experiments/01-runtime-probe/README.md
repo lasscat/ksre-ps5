@@ -45,4 +45,24 @@ make deploy              # send to the console configured in .local-config/conso
 |---|---|---|
 | 2026-11-08 | host: macOS 27.2 arm64 | 28 pass, 0 fail, 1 skip (logic test only) |
 | 2026-11-08 | compile-only for `x86_64-sie-ps5` (Apple clang 21, SDK v0.45 headers) | object file produced; not linked |
+| 2026-11-09 | CI ubuntu-24.04 and macos-15 (host) | 28 pass, 0 fail (logic test only) |
+| 2026-11-09 | CI ps5-cross-build (LLVM 18, SDK v0.45), commit d2e7aae | links: ELF64 x86-64 PIE, NEEDED `libkernel_web.sprx`, `libSceLibcInternal.sprx`, `libSceNet.sprx`; sha256 `47af42e1a688284e2fb5e286c0223c664359a5f7370eeabeaefceff61488a3dd` |
 | — | PS5 console | not yet run |
+
+### Link inventory (CI, 2026-11-09)
+
+152 of 173 functions link. Not linkable: `nice copy_file_range dup3 mremap
+memfd_create pthread_getattr_np sem_clockwait sched_setaffinity
+getgrouplist ttyname openpty forkpty ctermid accept4 if_nameindex
+epoll_create1 iconv_open getentropy getrandom uname confstr`.
+
+The test is the same as autoconf's `AC_CHECK_FUNCS` (declare a dummy
+prototype, take the address, link), so it predicts what CPython's
+`configure` will conclude. One known false negative: `uname` is a
+`static inline` wrapper around `__xuname` in the SDK's `sys/utsname.h`, so
+it works when the header is included (the probe itself calls it) but needs
+`ac_cv_func_uname=yes` in CPython's `config.site`. Several others
+(`confstr`, `accept4`, `dup3`, `ttyname`, `nice`) are declared in the SDK
+headers but have no linkable symbol; configure will correctly treat them as
+absent. Whether linkable names also resolve at run time is checked by the
+probe's `dl.symbols` inventory on the console.

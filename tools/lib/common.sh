@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+# shellcheck shell=bash
 # Shared helpers for ksre-ps5 shell tools. Source, do not execute.
 
 KSRE_PS5_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

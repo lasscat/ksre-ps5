@@ -17,8 +17,8 @@ not loading, loading is not running, running a test is not playing the game.
 
 | Component | host | compiles | links | loader | console | game |
 |---|---|---|---|---|---|---|
-| Runtime probe (`experiments/01-runtime-probe`) | yes (macOS arm64) | yes (Apple clang, SDK v0.45 headers) | CI | — | — | n/a |
-| Link inventory for CPython configure | n/a | n/a | CI | n/a | n/a | n/a |
+| Runtime probe (`experiments/01-runtime-probe`) | yes (macOS arm64; CI Linux + macOS) | yes (Apple clang, SDK v0.45 headers) | yes (CI, LLVM 18) | — | — | n/a |
+| Link inventory for CPython configure | n/a | n/a | yes (CI): 152/173 link | n/a | n/a | n/a |
 | SDL2 display / GL / input / audio experiments | — | — | — | — | — | — |
 | CPython 3.12.8 | — | — | — | — | — | — |
 | Ren'Py 8.5.3 native modules | — | — | — | — | — | — |
@@ -27,7 +27,8 @@ not loading, loading is not running, running a test is not playing the game.
 | Launcher / packaging | — | — | — | — | — | — |
 
 "CI" means the GitHub Actions job `ps5-cross-build` performs the step; check
-the latest run for its result.
+the latest run for its result. Linking is not loading: the probe has not yet
+been sent to a console.
 
 ## Known blockers
 
