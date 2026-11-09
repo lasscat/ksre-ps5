@@ -48,6 +48,8 @@ $EDITOR .local-config/console.env          # set PS5_HOST to the console's LAN a
 
    ```sh
    tools/deploy.sh build/experiments/01-runtime-probe/ps5/ksre-ps5-probe.elf
+   # or, for the CI artifact:
+   tools/deploy.sh build/ci-probe/ksre-ps5-probe.elf
    ```
 
    Output is printed and saved to `.local-work/logs/ksre-ps5-probe-<UTC>.log`.
