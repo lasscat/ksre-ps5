@@ -12,6 +12,11 @@ on:
 permissions:
   contents: read
 
+# 'bash' here means bash -eo pipefail, so '| tee' cannot hide a failure.
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

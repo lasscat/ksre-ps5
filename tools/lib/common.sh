@@ -39,7 +39,7 @@ download_verified() {
   fi
   mkdir -p "$(dirname "$dest")"
   echo "downloading $url"
-  curl -fL --retry 3 -o "${dest}.part" "$url"
+  curl -fL --retry 6 --retry-delay 10 --retry-connrefused -o "${dest}.part" "$url"
   got=$(sha256_of "${dest}.part")
   if [ "$got" != "$want" ]; then
     rm -f "${dest}.part"
