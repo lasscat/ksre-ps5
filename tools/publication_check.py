@@ -235,7 +235,7 @@ def main():
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--staged", action="store_true")
     g.add_argument("--tracked", action="store_true")
-    g.add_argument("--outgoing", nargs="?", const="@upstream", metavar="REF")
+    g.add_argument("--outgoing", nargs="?", const="@{upstream}", metavar="REF")
     g.add_argument("--all-history", action="store_true")
     args = ap.parse_args()
 
