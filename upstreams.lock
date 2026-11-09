@@ -32,6 +32,8 @@ PS5_SDK_RELEASE=v0.45
 PS5_SDK_RELEASE_COMMIT=a7685ce8e97ce1f8a4f38253a41d54241c9124f1
 PS5_SDK_ZIP_URL=https://github.com/ps5-payload-dev/sdk/releases/download/v0.45/ps5-payload-sdk.zip
 PS5_SDK_ZIP_SHA256=5fac64093d0e3e69f2584ce7935f24f703f622d9681f1495c85b9f00d1291a2c
+# Same asset through the REST API (used when the release CDN URL fails; same SHA-256).
+PS5_SDK_ZIP_API_URL=https://api.github.com/repos/ps5-payload-dev/sdk/releases/assets/663315518
 
 # --- PS5 dependency bundles (pacbrew-repo binary releases) ------------------
 # v0.41.1: Mesa 26.2.0 RADV-on-AGC + zink + EGL "videoout"; SDL2 patched for

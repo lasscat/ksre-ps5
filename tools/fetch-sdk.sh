@@ -13,11 +13,12 @@ set -euo pipefail
 rel=$(lock_get PS5_SDK_RELEASE)
 url=$(lock_get PS5_SDK_ZIP_URL)
 sum=$(lock_get PS5_SDK_ZIP_SHA256)
+api_url=$(lock_get PS5_SDK_ZIP_API_URL)
 base="${KSRE_PS5_ROOT}/external/toolchains"
 zip="${base}/downloads/ps5-payload-sdk-${rel}.zip"
 dest="${base}/ps5-payload-sdk-${rel}"
 
-download_verified "$url" "$zip" "$sum"
+download_verified "$url" "$zip" "$sum" "$api_url"
 
 if [ ! -f "${dest}/ps5-payload-sdk/target/lib/libc.a" ]; then
   rm -rf "${dest}.tmp"

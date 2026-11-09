@@ -57,7 +57,14 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q clang-18 lld-18 llvm-18
+      - name: Cache the pinned SDK download
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: external/toolchains/downloads
+          key: ps5-payload-sdk-${{ hashFiles('upstreams.lock') }}
       - name: Fetch pinned ps5-payload-sdk (SHA-256 verified)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           tools/fetch-sdk.sh | tee "$RUNNER_TEMP/sdk.txt"
           grep '^export PS5_PAYLOAD_SDK=' "$RUNNER_TEMP/sdk.txt" | sed 's/^export //; s/"//g' >> "$GITHUB_ENV"

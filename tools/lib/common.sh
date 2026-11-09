@@ -32,14 +32,28 @@ sha256_of() {
 
 # download URL DEST SHA256 : download to DEST unless it already matches.
 download_verified() {
-  local url=$1 dest=$2 want=$3 got
+  # Optional 4th argument: a GitHub REST API asset URL tried if the primary
+  # URL fails. GITHUB_TOKEN, if set, authenticates that API request only.
+  local url=$1 dest=$2 want=$3 fallback=${4:-} got
   if [ -f "$dest" ] && [ "$(sha256_of "$dest")" = "$want" ]; then
     echo "already present and verified: $dest"
     return 0
   fi
   mkdir -p "$(dirname "$dest")"
   echo "downloading $url"
-  curl -fL --retry 6 --retry-delay 10 --retry-connrefused -o "${dest}.part" "$url"
+  if ! curl -fL --retry 3 --retry-delay 5 --retry-connrefused -o "${dest}.part" "$url"; then
+    rm -f "${dest}.part"
+    [ -n "$fallback" ] || return 1
+    echo "primary URL failed; trying the API asset URL $fallback"
+    local hdr=(-H "Accept: application/octet-stream")
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+      hdr+=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+    fi
+    if ! curl -fL --retry 6 --retry-delay 10 --retry-connrefused "${hdr[@]}" -o "${dest}.part" "$fallback"; then
+      rm -f "${dest}.part"
+      return 1
+    fi
+  fi
   got=$(sha256_of "${dest}.part")
   if [ "$got" != "$want" ]; then
     rm -f "${dest}.part"
