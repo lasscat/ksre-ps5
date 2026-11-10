@@ -138,6 +138,18 @@ Decision: try path 1 first in a dedicated GL experiment that renders with
 GLSL shaders comparable to Ren'Py's, measure it, and keep path 2 as the
 fallback. Ren'Py's renderer is selected with `RENPY_RENDERER=gl2|gles2`.
 
+**Update (milestone 02b, console evidence):** on firmware 7.61 path 1 does not
+get past Mesa's device creation (`sceAgcInit(8)` fails with 0x8a6c002f, so
+there is no EGL display and no GL context of any kind). Path 2 works: OSMesa /
+llvmpipe gives a GL 4.5 compatibility context, the Ren'Py-style shaders and
+draw patterns read back correctly, and 1080p frame times are 9.9 ms for a
+plain scene up to 69 ms for a re-rendered blur. **Decision: path 2, renderer
+`gl2` (OSMesa has no OpenGL ES), 1080p.** Two build/runtime rules come with
+it: every payload that loads a Mesa library must be linked with `-rdynamic`
+(the libraries import the SDK's `kernel_mprotect` weakly and the loader only
+resolves it against exported executable symbols), and a GL payload should end
+with `_exit()` rather than returning from `main`. See [GRAPHICS.md](GRAPHICS.md).
+
 ### Python runtime plan (inference, to be validated in milestone 3)
 
 * CPython 3.12.8 cross-compiled with `--host=x86_64-unknown-freebsd`,

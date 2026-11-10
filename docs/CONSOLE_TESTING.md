@@ -129,6 +129,24 @@ launches it with `GET /hbldr?path=...&pipe=1`, and saves the streamed output
 to `.local-work/logs/<name>-hb-<UTC>.log`. Remove the directory afterwards
 with any FTP client if you want a clean `/data/homebrew`.
 
+Further options (milestone 2b): `--extra LOCAL[:NAME]` uploads more files next
+to `eboot.elf` (skipped when the remote size already matches; `--reupload`
+forces), `--env "A=1 B=2"` sets the payload's environment (the launcher's `env=`
+parameter), `--args "..."` passes arguments. The runner returns by itself:
+as soon as the payload prints a `KSRE_PS5_<name>_END` line (`--until REGEX`
+changes the pattern), when the connection closes, after `--idle-timeout`
+seconds without any output (default 90; raise it for a payload that is quiet for
+longer), or at `--timeout SECONDS` (hard limit, default 120). Payloads should
+therefore print one end marker as their last line and then exit.
+Payloads that load Mesa or any shared object that maps executable memory must
+be linked with `-rdynamic` and should leave via `_exit()` (see
+[GRAPHICS.md](GRAPHICS.md)). The payload's working directory is `/data/homebrew/<name>`, and the
+SDK's run-time linker searches the working directory for shared libraries a
+payload `dlopen()`s, so Mesa's `.so` files go there (no `/user/homebrew`
+needed). Graphics payloads can leave the console's loader services stopped
+after a crash; if `websrv`/`ftpsrv`/`elfldr` stop answering, restart them with
+your usual enabler before the next run.
+
 ## Cleanup
 
 The probe only writes inside `/data/ksre-ps5/`. Delete that directory (for

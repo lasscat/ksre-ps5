@@ -77,6 +77,38 @@ jobs:
           make -C experiments/02a-sdl-display run-host | tee "$RUNNER_TEMP/02a.txt"
           grep -q '^KSRE_PS5_02A_END .* fail=0$' "$RUNNER_TEMP/02a.txt"
 
+  host-gl-shaders:
+    # Experiment 02b on ordinary hosts: build with the system SDL2 on both OSes.
+    # On Linux the shaders are also executed for real on Mesa's llvmpipe through
+    # SDL's offscreen video driver + EGL (desktop GL dialect), and the read-back
+    # probes must pass. That is a host result, not evidence about the PS5.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install SDL2 (and a software GL stack on Linux)
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q libsdl2-dev libegl1 libgl1 libgl1-mesa-dri libgles2 libegl-mesa0
+          else
+            brew install sdl2
+          fi
+      - name: Build 02b on host
+        run: make -C experiments/02b-gl-shaders host
+      - name: Run the 02b read-back self-test on llvmpipe (Linux, offscreen + EGL)
+        if: runner.os == 'Linux'
+        env:
+          SDL_VIDEODRIVER: offscreen
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          build/experiments/02b-gl-shaders/host/ksre-ps5-02b-gl-shaders --api gl --windowed --selftest-only --hold-ms 0 | tee "$RUNNER_TEMP/02b.txt"
+          grep -q '^02B PASS selftest ' "$RUNNER_TEMP/02b.txt"
+          grep -q '^KSRE_PS5_02B_END fail=0$' "$RUNNER_TEMP/02b.txt"
+
   ps5-cross-build:
     runs-on: ubuntu-24.04
     steps:
@@ -118,6 +150,26 @@ jobs:
           readelf -h "$elf" | grep -E 'Class|Machine|Type'
           readelf -d "$elf" | grep NEEDED || true
           sha256sum "$elf"
+      - name: Fetch pinned pacbrew bundle v0.40.3 (software GL; SHA-256 verified)
+        run: tools/fetch-pacbrew.sh swgl | tee "$RUNNER_TEMP/pacbrew-swgl.txt"
+      - name: Cross-build and link experiment 02b (GL shaders) with both pacbrew bundles
+        run: |
+          make -C experiments/02b-gl-shaders ps5
+          make -C experiments/02b-gl-shaders ps5 PACBREW=swgl
+          for elf in build/experiments/02b-gl-shaders/ps5/ksre-ps5-02b-gl-shaders.elf build/experiments/02b-gl-shaders/ps5-swgl/ksre-ps5-02b-gl-shaders.elf; do
+            file "$elf"
+            readelf -d "$elf" | grep NEEDED || true
+            sha256sum "$elf"
+          done
+      - name: Upload 02b payloads (compiled output only)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ksre-ps5-02b-gl-shaders-elf
+          path: |
+            build/experiments/02b-gl-shaders/ps5/ksre-ps5-02b-gl-shaders.elf
+            build/experiments/02b-gl-shaders/ps5-swgl/ksre-ps5-02b-gl-shaders.elf
+          retention-days: 14
+          if-no-files-found: error
       - name: Upload 02a payload (compiled output only)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

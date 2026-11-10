@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-11-10 (milestone 02a). Statuses are deliberately separate: compiling is
+Last updated: 2026-11-10 (milestone 02b). Statuses are deliberately separate: compiling is
 not loading, loading is not running, running a test is not playing the game.
 
 | Status | Meaning |
@@ -19,8 +19,9 @@ not loading, loading is not running, running a test is not playing the game.
 |---|---|---|---|---|---|---|
 | Runtime probe (`experiments/01-runtime-probe`) | yes (macOS arm64; CI Linux + macOS) | yes (Apple clang, SDK v0.45 headers) | yes (CI, LLVM 18) | yes (elfldr 9021) | yes (fw 7.61, 29 pass / 1 fail) | n/a |
 | Link inventory for CPython configure | n/a | n/a | yes (CI): 152/173 link | n/a | n/a | n/a |
-| SDL2 display + image + text (`experiments/02a-sdl-display`) | yes (macOS arm64, dummy video driver) | yes | yes (pacbrew v0.41.1 and v0.40.3) | yes (elfldr and websrv homebrew launcher) | partial: ran to its end marker with captured logs; picture appears only when launched as homebrew; maintainer reported it "seemed to work" but aspect ratio is unconfirmed and the console showed an error afterwards | n/a |
-| SDL2 GL / input mapping / audio experiments | — | — | — | — | — | — |
+| SDL2 display + image + text (`experiments/02a-sdl-display`) | yes (macOS arm64, dummy video driver) | yes | yes (pacbrew v0.41.1 and v0.40.3) | yes (elfldr and websrv homebrew launcher) | partial: ran to its end marker with captured logs; picture appears only when launched as homebrew; maintainer confirmed the picture and aspect ratio were correct; the console showed an error after the run ended (text not recorded) | n/a |
+| OpenGL / Ren'Py-style shaders (`experiments/02b-gl-shaders`) | yes (macOS GL 2.1: 7/7 read-back probes pass; GLES dialect not runnable on that host) | yes | yes (HW and SW pacbrew bundles) | yes (homebrew launcher; Mesa libraries found in the payload directory) | **SW bundle (OSMesa/llvmpipe): works**: GL 4.5 compat context, 7/7 read-back probes pass, 0 GL errors, 1080p scene 59.9 fps, full-screen blur 12–19 fps (300 frames per test; needs `-rdynamic`, exit via `_exit`). **HW bundle: fails**, no GL context (`sceAgcInit(8)` 0x8a6c002f on firmware 7.61, also with `-rdynamic`) | n/a |
+| Input mapping / audio experiments | — | — | — | — | — | — |
 | CPython 3.12.8 | — | — | — | — | — | — |
 | Ren'Py 8.5.3 native modules | — | — | — | — | — | — |
 | Ren'Py original test game | — | — | — | — | — | — |
@@ -53,3 +54,20 @@ console showed after the payload ended, and the aspect-ratio check. Details,
 logs summary and caveats:
 [experiments/02a-sdl-display](../experiments/02a-sdl-display/README.md) and
 [CONSOLE_TESTING.md](CONSOLE_TESTING.md#payloads-that-draw-to-the-tv-milestone-2a-onwards).
+
+## Milestone 02b (OpenGL for Ren'Py) in short
+
+A GL experiment that requests Ren'Py's GL attributes, resolves Ren'Py's 58
+required functions, assembles Ren'Py's own shader parts (texture, alpha,
+matrixcolor, blur) in both GLSL dialects, draws with Ren'Py's call patterns and
+checks the pixels it reads back, builds for the host and for both pacbrew
+bundles. On a host GPU and on the console's **software** path (Mesa OSMesa /
+llvmpipe, v0.40.3) every read-back check passes with no GL errors; at 1080p a
+typical dialogue scene renders in 9.9 ms (60 fps) while full-screen effects
+cost 25–50 ms each (matrixcolor 30 fps, blur 12–19 fps). The **hardware**
+bundle (Mesa 26.2, zink on RADV-on-AGC) cannot create a Vulkan device on
+firmware 7.61, so it provides no GL context. Decision: software path, `gl2`,
+1080p, payloads linked with `-rdynamic`, exit via `_exit()`. Whether KSRE is
+playable at those speeds is not yet known. Details, the draft upstream
+issues and the root-cause write-up: [GRAPHICS.md](GRAPHICS.md) and
+[experiments/02b-gl-shaders](../experiments/02b-gl-shaders/README.md).

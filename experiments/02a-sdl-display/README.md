@@ -53,11 +53,13 @@ Statuses are kept separate. "—" means not attempted.
 | 2026-11-10 | PS5 cross-build, bundle v0.40.3 | — | yes | yes | — | — | SDL `2.30.12-ga47182a20` |
 | 2026-11-10 | console, bare elfldr (9021), bundle v0.41.1 | — | — | — | yes | **no picture**: log shows `fail=0`, 600 frames, 59.9 fps, 1920×1080@60 ABGR8888, software renderer; maintainer saw only the home screen | log captured; keyboard and pad open failed (`0x809b0081`); payload was a background process |
 | 2026-11-10 | console, bare elfldr (9021), bundle v0.40.3 | — | — | — | yes (second payload accepted straight after the first exited) | same as above | log captured |
-| 2026-11-10 | console, **websrv homebrew launcher**, bundle v0.41.1, two runs | — | — | — | yes | log: `fail=0`, 600 frames, 59.9 fps, worst 18 ms; big app id non-zero; pad opens (17 buttons, 6 axes, 1 hat; GUID `0300d042…`); maintainer: "it seemed to work" | **picture details not yet confirmed** (aspect ratio, edge cropping), and the maintainer reported an **error shown by the console after the run**; its text is not yet recorded |
+| 2026-11-10 | console, **websrv homebrew launcher**, bundle v0.41.1, two runs | — | — | — | yes | log: `fail=0`, 600 frames, 59.9 fps, worst 18 ms; big app id non-zero; pad opens (17 buttons, 6 axes, 1 hat; GUID `0300d042…`); maintainer: "it seemed to work"; later confirmed picture and aspect ratio correct | the maintainer reported an **error shown by the console after the run**; the text could not be recalled and is not recorded |
 
-Open at the end of 02a: the exact error after exit and whether it is caused by
-how the payload ends (the process simply returns from `main`); the aspect
-ratio check; early exit by joystick button/Escape was not exercised.
+Close-out (2026-11-10, maintainer, asked once at the start of 02b): the
+picture and aspect ratio were correct ("everything was good"). The error shown
+after the payload ended could not be recalled, so its text is not recorded.
+Still open: whether it is caused by how the payload ends (the process simply
+returns from `main`); early exit by joystick button/Escape was not exercised.
 
 ### Findings (console, from the captured logs)
 
