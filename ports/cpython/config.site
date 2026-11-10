@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# configure answers for CPython 3.12.8 on x86_64-sie-ps5 (ps5-payload-sdk v0.45).
+# Sourced by configure through CONFIG_SITE (ports/cpython/build.sh).
+#
+# configure link-tests most functions itself with prospero-clang, which is the
+# authority (RESEARCH 3.1). This file only answers what configure cannot find out
+# while cross compiling, and corrects link tests that give the wrong answer.
+# Evidence: 01a link inventory (host + ci), 01b runtime probe (console, fw 7.61).
+
+# Every stdlib extension module is built into libpython (no shared modules).
+MODULE_BUILDTYPE=static
+
+# --- Run-time tests configure cannot run when cross compiling ---------------
+# pthread_* come from libkernel without extra flags (probe threads.* PASS).
+ac_cv_pthread_is_default=yes
+# x86-64: unaligned access is fine, doubles use SSE2 (no x87 double rounding).
+ac_cv_aligned_required=no
+ac_cv_x87_double_rounding=no
+# wchar_t is a 16-bit unsigned type on this target (probe: sizeof(wchar_t)=2).
+ac_cv_wchar_t_signed=no
+# getaddrinfo comes from the SDK libc (FreeBSD code); probe net.getaddrinfo PASS.
+ac_cv_buggy_getaddrinfo=no
+# Device files on the console; not used (no pseudo-terminals).
+ac_cv_file__dev_ptmx=no
+ac_cv_file__dev_ptc=no
+
+# --- Link-test corrections (01a header-aware inventory) ----------------------
+# uname() exists only as a static inline in the SDK's <sys/utsname.h>; configure's
+# link test with its own prototype fails although the header version works
+# (probe printed uname fields).
+ac_cv_func_uname=yes
+
+# Not linkable and not present at run time (RESEARCH 3.1, 20 names).
+ac_cv_func_nice=no
+ac_cv_func_dup3=no
+ac_cv_func_getgrouplist=no
+ac_cv_func_ttyname=no
+ac_cv_func_openpty=no
+ac_cv_func_forkpty=no
+ac_cv_func_ctermid=no
+ac_cv_func_accept4=no
+ac_cv_func_if_nameindex=no
+ac_cv_func_confstr=no
+ac_cv_func_copy_file_range=no
+ac_cv_func_mremap=no
+ac_cv_func_memfd_create=no
+ac_cv_func_pthread_getattr_np=no
+ac_cv_func_sem_clockwait=no
+ac_cv_func_sched_setaffinity=no
+ac_cv_func_epoll_create1=no
+ac_cv_func_iconv_open=no
+ac_cv_func_getentropy=no
+ac_cv_func_getrandom=no
+# No raw getrandom syscall either: os.urandom() must use /dev/urandom
+# (probe entropy.dev_urandom PASS). An unknown FreeBSD syscall raises SIGSYS.
+ac_cv_getrandom_syscall=no

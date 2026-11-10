@@ -164,6 +164,15 @@ with `_exit()` rather than returning from `main`. See [GRAPHICS.md](GRAPHICS.md)
   (`PyConfig`, module search paths, `Py_RunMain`) and sets
   `RENPY_PATH_TO_SAVES`, `RENPY_RENDERER` and the Python home.
 
+**Update (milestone 03a, host + ci):** the static build works as planned, with
+`--host=x86_64-unknown-freebsd` (two small configure patches; `sys.platform` is `freebsd`),
+`MODULE_BUILDTYPE=static`, math from the console's `libSceLibcInternal` (`--without-libm`)
+and zlib/bzip2/xz from the pinned pacbrew bundle. The pure-Python stdlib ships as
+`/data/ksre-ps5/python/lib/python312.zip` with hash-based `.pyc` files. The launcher runs
+the interpreter on a 16 MiB thread, in UTF-8 mode, and handles `SystemExit` itself instead
+of using `Py_RunMain` (which would `exit()` past the payload's `_exit()`). Module choices:
+[ports/cpython/README.md](../ports/cpython/README.md). Console start-up is milestone 03b.
+
 ### Media (source)
 
 * KSRE video: Matroska, **VP9 profile 0, 1920×1080, 30 fps + Opus 48 kHz**.

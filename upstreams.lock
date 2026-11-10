@@ -25,6 +25,10 @@ RENPY_BUILD_COMMIT=7bfab40c1174f622f644b24669afd5fb167fbb79
 # Versions renpy-build uses for 8.5.3 (tasks/*.py, requirements.txt):
 CPYTHON_VERSION=3.12.8
 CYTHON_VERSION=3.1.4
+# CPython source from python.org (ports/cpython/build.sh). Hash pinned
+# 2026-11-10; identical to the tarball renpy-build 8.5.3 ships in source/.
+CPYTHON_URL=https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz
+CPYTHON_SHA256=c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e
 
 # --- PS5 payload SDK (binary release; host LLVM/clang + lld required) -------
 PS5_SDK_REPO=https://github.com/ps5-payload-dev/sdk.git

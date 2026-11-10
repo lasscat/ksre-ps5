@@ -51,7 +51,11 @@ file; it reads renpy-build only from a user-fetched checkout and writes its
 own equivalents.
 
 **CPython** 3.12.8 — PSF License Version 2. Derivative works must retain the
-PSF copyright notice and summarise changes.
+PSF copyright notice and summarise changes. `ports/cpython/patches/` holds this
+project's changes (configure only, summarised in `ports/cpython/README.md`). A payload
+that embeds the static build also contains CPython's bundled libmpdec (BSD-2-Clause),
+expat (MIT) and HACL\* hash code (MIT), plus zlib, bzip2 and xz from the pacbrew bundle;
+a distributed binary must carry those notices.
 
 ## PS5 homebrew toolchain and libraries
 

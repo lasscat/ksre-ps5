@@ -33,7 +33,7 @@ jobs:
       - name: Publication check (all history, including author e-mails)
         run: python3 tools/publication_check.py --all-history
       - name: Shell script lint
-        run: shellcheck -x tools/*.sh tools/lib/common.sh experiments/01-runtime-probe/link-inventory.sh experiments/02a-sdl-display/tools/fetch-font.sh
+        run: shellcheck -x tools/*.sh tools/lib/common.sh experiments/01-runtime-probe/link-inventory.sh experiments/02a-sdl-display/tools/fetch-font.sh ports/cpython/build.sh
 
   host-probe:
     # Logic test of the probe on ordinary hosts. Not evidence about the PS5.
@@ -116,7 +116,7 @@ jobs:
       - name: Install host LLVM 18 (the version the SDK's own CI uses)
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q clang-18 lld-18 llvm-18
+          sudo apt-get install -y -q clang-18 lld-18 llvm-18 zlib1g-dev
       - name: Cache the pinned SDK download
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -161,6 +161,27 @@ jobs:
             readelf -d "$elf" | grep NEEDED || true
             sha256sum "$elf"
           done
+      - name: Cache the host build Python (CPython 3.12.8, used only on the build machine)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/host-python
+          key: host-python-${{ runner.os }}-${{ hashFiles('upstreams.lock', 'ports/cpython/build.sh') }}
+      - name: Cross-build CPython 3.12.8 (static) for the PS5
+        run: |
+          ports/cpython/build.sh host
+          ports/cpython/build.sh ps5
+          tr '\n' ' ' < build/cpython/ps5/modules.txt; echo
+          ls -l build/cpython/ps5/lib build/cpython/ps5/python-home/lib
+      - name: Link experiment 03 (payload embedding Python) and run its host twin
+        run: |
+          make -C experiments/03-python-hello ps5
+          elf=build/experiments/03-python-hello/ps5/ksre-ps5-03-python-hello.elf
+          file "$elf"
+          readelf -d "$elf" | grep NEEDED || true
+          sha256sum "$elf"
+          make -C experiments/03-python-hello run-host | tee "$RUNNER_TEMP/03.txt"
+          grep -q '^03 SUMMARY pass=10 fail=0 ' "$RUNNER_TEMP/03.txt"
+          grep -q '^KSRE_PS5_03_END rc=0$' "$RUNNER_TEMP/03.txt"
       - name: Upload 02b payloads (compiled output only)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

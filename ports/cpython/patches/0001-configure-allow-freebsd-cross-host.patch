@@ -1,0 +1,58 @@
+From: ksre-ps5
+Subject: configure: accept a FreeBSD --host when cross compiling
+
+CPython 3.12's configure refuses cross builds for any host it does not list
+(Linux, Cygwin, VxWorks, Emscripten, WASI). The PS5 payload target is
+FreeBSD-derived (clang x86_64-sie-ps5 defines __FreeBSD__, FreeBSD headers),
+so the port configures with --host=x86_64-unknown-freebsd. This adds that host
+to the two case statements: ac_sys_system=FreeBSD (selects configure's existing
+FreeBSD branches) and _PYTHON_HOST_PLATFORM=freebsd-x86_64. ac_sys_release
+stays empty, so MACHDEP and sys.platform are "freebsd".
+
+The generated configure is patched the same way, so autoreconf is not needed.
+
+SPDX-License-Identifier: PSF-2.0
+--- a/configure.ac
++++ b/configure.ac
+@@ -559,6 +559,9 @@
+ 	*-*-wasi)
+ 	    ac_sys_system=WASI
+ 	    ;;
++	*-*-freebsd*)
++		ac_sys_system=FreeBSD
++		;;
+ 	*)
+ 		# for now, limit cross builds to known configurations
+ 		MACHDEP="unknown"
+@@ -619,6 +622,9 @@
+ 	wasm32-*-* | wasm64-*-*)
+ 		_host_cpu=$host_cpu
+ 		;;
++	*-*-freebsd*)
++		_host_cpu=$host_cpu
++		;;
+ 	*)
+ 		# for now, limit cross builds to known configurations
+ 		MACHDEP="unknown"
+--- a/configure
++++ b/configure
+@@ -4279,6 +4279,9 @@
+ 	*-*-wasi)
+ 	    ac_sys_system=WASI
+ 	    ;;
++	*-*-freebsd*)
++		ac_sys_system=FreeBSD
++		;;
+ 	*)
+ 		# for now, limit cross builds to known configurations
+ 		MACHDEP="unknown"
+@@ -4341,6 +4344,9 @@
+ 	wasm32-*-* | wasm64-*-*)
+ 		_host_cpu=$host_cpu
+ 		;;
++	*-*-freebsd*)
++		_host_cpu=$host_cpu
++		;;
+ 	*)
+ 		# for now, limit cross builds to known configurations
+ 		MACHDEP="unknown"

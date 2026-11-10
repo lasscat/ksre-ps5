@@ -1,0 +1,51 @@
+From: ksre-ps5
+Subject: configure: link bundled expat and libmpdec with $(LIBM), not -lm
+
+configure hard-codes -lm for the bundled expat and libmpdec, so
+--without-libm / --with-libm=... has no effect on those two modules. On the
+PS5 the C99 math functions come from the console's libSceLibcInternal and the
+SDK has no libm; a stray -lm either fails to link or silently picks up an
+unrelated static libm from another library path (pacbrew's openlibm). Use the
+Makefile's $(LIBM), which --with-libm controls, like the math module does.
+
+SPDX-License-Identifier: PSF-2.0
+--- a/configure.ac
++++ b/configure.ac
+@@ -3831,7 +3831,7 @@
+   LIBEXPAT_INTERNAL=
+ ], [
+   LIBEXPAT_CFLAGS="-I\$(srcdir)/Modules/expat"
+-  LIBEXPAT_LDFLAGS="-lm \$(LIBEXPAT_A)"
++  LIBEXPAT_LDFLAGS="\$(LIBM) \$(LIBEXPAT_A)"
+   LIBEXPAT_INTERNAL="\$(LIBEXPAT_HEADERS) \$(LIBEXPAT_A)"
+ ])
+ 
+@@ -3915,7 +3915,7 @@
+   LIBMPDEC_INTERNAL=
+ ], [
+   LIBMPDEC_CFLAGS="-I\$(srcdir)/Modules/_decimal/libmpdec"
+-  LIBMPDEC_LDFLAGS="-lm \$(LIBMPDEC_A)"
++  LIBMPDEC_LDFLAGS="\$(LIBM) \$(LIBMPDEC_A)"
+   LIBMPDEC_INTERNAL="\$(LIBMPDEC_HEADERS) \$(LIBMPDEC_A)"
+ 
+   dnl Disable forced inlining in debug builds, see GH-94847
+--- a/configure
++++ b/configure
+@@ -14030,7 +14030,7 @@
+ else $as_nop
+ 
+   LIBEXPAT_CFLAGS="-I\$(srcdir)/Modules/expat"
+-  LIBEXPAT_LDFLAGS="-lm \$(LIBEXPAT_A)"
++  LIBEXPAT_LDFLAGS="\$(LIBM) \$(LIBEXPAT_A)"
+   LIBEXPAT_INTERNAL="\$(LIBEXPAT_HEADERS) \$(LIBEXPAT_A)"
+ 
+ fi
+@@ -14514,7 +14514,7 @@
+ else $as_nop
+ 
+   LIBMPDEC_CFLAGS="-I\$(srcdir)/Modules/_decimal/libmpdec"
+-  LIBMPDEC_LDFLAGS="-lm \$(LIBMPDEC_A)"
++  LIBMPDEC_LDFLAGS="\$(LIBM) \$(LIBMPDEC_A)"
+   LIBMPDEC_INTERNAL="\$(LIBMPDEC_HEADERS) \$(LIBMPDEC_A)"
+ 
+     if test "x$with_pydebug" = xyes

@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Modules/Setup.local for the ksre-ps5 CPython build (copied in by build.sh).
+#
+# Every other stdlib extension module is built statically from Modules/Setup.stdlib
+# (config.site sets MODULE_BUILDTYPE=static), as configure detected it. This file only
+# switches off modules on purpose; makesetup reads it first, so "*disabled*" wins.
+# Reasons are summarised in ports/cpython/README.md.
+
+*disabled*
+
+# Needs libffi; neither the SDK nor the pacbrew bundle ships it. Ren'Py's ctypes uses
+# are platform-specific (Windows/macOS/Android); revisit in 04a if one is reached.
+_ctypes
+
+# Needs OpenSSL. pacbrew has OpenSSL 3.5.2, but nothing in the 03a/03b set needs TLS
+# (asyncio imports ssl optionally) and hashlib falls back to the built-in _md5/_sha1/
+# _sha2/_sha3/_blake2. Enable in 04a if Ren'Py needs it.
+_ssl
+_hashlib
+
+# The payload is one process with no fork/exec of Python children and no shared memory
+# users; multiprocessing cannot work. (_posixsubprocess stays: subprocess and asyncio
+# import it at import time.)
+_multiprocessing
+_posixshmem
+
+# The SDK libc has getgrgid/getgrnam but not setgrent/getgrent/endgrent, which
+# grp.getgrall() needs (link fails). There is no group database on the console anyway;
+# shutil, tarfile and pathlib treat a missing grp module as optional.
+grp
+
+# No terminal, no database libraries, no GUI on the console.
+_curses
+_curses_panel
+readline
+_dbm
+_gdbm
+_sqlite3
+_tkinter
+_uuid
+nis
+_crypt
+ossaudiodev

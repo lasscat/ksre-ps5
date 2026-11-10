@@ -142,7 +142,11 @@ for spec in "2 cmake cmake cmake" "2 ninja ninja ninja-build" "2 meson meson mes
   set -- $spec
   if command -v "$2" >/dev/null 2>&1 || { [ "$2" = libtool ] && command -v glibtool >/dev/null 2>&1; }; then ok "$2"; else need "$1" "$2" "$3" "$4"; fi
 done
-if command -v python3.12 >/dev/null 2>&1; then ok "python3.12" "$(command -v python3.12) (build Python for CPython $(lock_get CPYTHON_VERSION))"
+# CPython's --with-build-python: ports/cpython/build.sh host builds the exact version
+# into build/host-python; a system python3.12 is only a fallback for other tools.
+if [ -x "${KSRE_PS5_ROOT}/build/host-python/bin/python3.12" ]; then
+  ok "python3.12" "build/host-python (build Python for CPython $(lock_get CPYTHON_VERSION))"
+elif command -v python3.12 >/dev/null 2>&1; then ok "python3.12" "$(command -v python3.12) (build/host-python not built yet: ports/cpython/build.sh host)"
 else need 3 "python3.12 (build Python)" "python@3.12" "python3.12 python3.12-venv"; fi
 
 echo

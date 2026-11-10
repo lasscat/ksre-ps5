@@ -64,11 +64,24 @@ CI builds the probe payload on every push and keeps it as the artifact
 gh run download --repo lasscat/ksre-ps5 --name ksre-ps5-probe-elf --dir build/ci-probe
 ```
 
+## Milestone 3a: CPython
+
+```sh
+source .local-config/env.sh              # or export PS5_PAYLOAD_SDK as above
+tools/fetch-pacbrew.sh swgl              # zlib, bzip2, xz for the PS5 build
+ports/cpython/build.sh host              # CPython 3.12.8 for this machine -> build/host-python
+ports/cpython/build.sh ps5               # static PS5 build -> build/cpython/ps5
+make -C experiments/03-python-hello ps5 run-host
+```
+
+The host build needs only a C compiler and make (on Linux also `zlib1g-dev`); it is the
+`--with-build-python` for the cross build. Details: `ports/cpython/README.md`.
+
 ## Later milestones (preview)
 
 `tools/check-env.sh --milestone 3` lists the additional host tools: meson,
-pkg-config, nasm (FFmpeg x86 assembly), autoconf/automake/libtool, and a host
-Python 3.12 for CPython's `--with-build-python`. Cython 3.1.4 will be
+pkg-config, nasm (FFmpeg x86 assembly), autoconf/automake/libtool (for the C
+libraries of 3c; CPython itself needs none of them). Cython 3.1.4 will be
 installed into a project-local virtual environment, not globally.
 
 ## Publication safety
