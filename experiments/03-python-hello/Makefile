@@ -6,6 +6,7 @@
 #                   PS5_PAYLOAD_SDK and a host LLVM)
 #   make host       build the same launcher for this machine against build/host-python
 #   make run-host   run it on the host (logic check only; not evidence about the PS5)
+#                   (-rdynamic: the host build's shared stdlib modules need libpython's symbols)
 #
 # Console run (03b): the payload expects the stdlib at
 # /data/ksre-ps5/python/lib/python312.zip (build/cpython/ps5/python-home/lib/python312.zip).
@@ -67,7 +68,7 @@ $(HOST_BIN): $(SRC) $(HDR)
 	@if [ ! -x "$(HOST_PY_CONFIG)" ]; then echo "Run: ports/cpython/build.sh host" >&2; exit 2; fi
 	@mkdir -p $(dir $@)
 	$(HOST_CC) $(CFLAGS_COMMON) $$($(HOST_PY_CONFIG) --includes) -DKSRE_PY_HOME='"$(HOST_PY_PREFIX)"' \
-	  -o $@ $(SRC) $$($(HOST_PY_CONFIG) --ldflags --embed) -lpthread
+	  -rdynamic -o $@ $(SRC) $$($(HOST_PY_CONFIG) --ldflags --embed) -lpthread
 
 run-host: $(HOST_BIN)
 	$(HOST_BIN)
