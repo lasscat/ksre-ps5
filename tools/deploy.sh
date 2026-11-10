@@ -5,7 +5,8 @@
 # .local-work/logs/ (ignored by git). Console settings come from
 # .local-config/console.env (copy config/console.env.example).
 #
-# Usage: tools/deploy.sh PAYLOAD.elf [--timeout SECONDS]
+# Usage: tools/deploy.sh PAYLOAD.elf [--timeout SECONDS] [--idle-timeout S] [--until REGEX]
+# Stops on EOF, on a KSRE_PS5_*_END line, or at the timeouts (see tools/ps5_send.py).
 set -euo pipefail
 # shellcheck source=lib/common.sh
 . "$(dirname "$0")/lib/common.sh"

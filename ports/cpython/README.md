@@ -37,14 +37,24 @@ macOS hosts), which is a second link check.
 | `config.site` | answers configure cannot get while cross compiling, from the 01a link inventory and 01b probe: the 20 absent functions (`=no`), `uname` (header inline, `=yes`), no raw getrandom syscall, 16-bit unsigned `wchar_t`, pthreads without flags, x86-64 facts |
 | `Setup.local` | `*disabled*` list (below) |
 
-Patches (`patches/`, applied to the extracted tarball; both written so they could go upstream):
+Patches (`patches/`, applied to the extracted tarball; written so they could go upstream):
 
 | Patch | Change |
 |---|---|
 | `0001-configure-allow-freebsd-cross-host` | configure only allows cross builds for Linux/Cygwin/VxWorks/WASM hosts; adds `*-*-freebsd*` (`ac_sys_system=FreeBSD`, `_PYTHON_HOST_PLATFORM=freebsd-x86_64`) to `configure.ac` and `configure` (no autoreconf needed) |
 | `0002-configure-respect-libm-for-bundled-expat-mpdec` | configure hard-codes `-lm` for the bundled expat and libmpdec, ignoring `--with-libm`; the stray `-lm` silently linked pacbrew's openlibm. Uses `$(LIBM)` instead |
+| `0003-timemodule-test-value-of-have-decl-tzname` | timemodule tests `HAVE_DECL_TZNAME` with `#ifdef`, but configure defines it to 0; tests the value (03b) |
+| `0004-thread-pthread-clear-ftz-daz-on-ps5` | PS5 threads start with MXCSR FTZ/DAZ set (console: 0x9fc0); clears them in `pythread_wrapper` so Python threads keep IEEE subnormals (03b) |
+| `0005-timemodule-reject-trailing-e-o-modifier-on-ps5` | the console's `wcsftime()` never returns for a format ending in a bare `%E`/`%O`; `time.strftime` raises `ValueError` instead (03b) |
 
-No C source of CPython needed a change for compiling and linking. The build compiles with
+Run-time corrections in `config.site` (03b, console evidence): `struct tm` `tm_zone`/`tm_gmtoff`
+off (the console's `localtime_r` leaves them unset, so `import time` crashed); `tzname` off;
+`clock_nanosleep` off (links against an SDK stub, absent on the console: `time.sleep` raised
+ENOSYS; `nanosleep` works); `fdopendir` off (fails with EOPNOTSUPP, which broke `os.scandir(fd)`,
+`os.fwalk` and `shutil.rmtree`).
+
+No C source of CPython needed a change for compiling and linking (03a); patches 0003–0005 are
+run-time fixes from 03b. The build compiles with
 `-Werror=implicit-function-declaration` (CPython's default) and links with `-rdynamic`
 (R13); the only warnings are the SDK `math.h` `_Generic` notes also seen in 01a and one
 always-false `wchar_t` range comparison (16-bit `wchar_t`).

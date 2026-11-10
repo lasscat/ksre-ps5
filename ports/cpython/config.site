@@ -55,3 +55,23 @@ ac_cv_func_getrandom=no
 # No raw getrandom syscall either: os.urandom() must use /dev/urandom
 # (probe entropy.dev_urandom PASS). An unknown FreeBSD syscall raises SIGSYS.
 ac_cv_getrandom_syscall=no
+
+# --- Run-time corrections (03b console) ---------------------------------------
+# The SDK's <time.h> declares the FreeBSD struct tm with tm_gmtoff/tm_zone, but
+# localtime_r() is a wrapper around libSceLibcInternal's localtime_s(), which does
+# not fill them: tm_zone was stack garbage (0x8) and `import time` crashed in
+# init_timezone(). Without the member CPython uses strftime("%Z") and timegm().
+ac_cv_member_struct_tm_tm_zone=no
+# Without tm_zone configure falls back to tzname, which the SDK declares, but its
+# <time.h> has FreeBSD's timezone() function, not the SysV variables: keep the
+# localtime()/strftime() path in timemodule.c.
+ac_cv_have_decl_tzname=no
+ac_cv_var_tzname=no
+# clock_nanosleep() links (SDK stub) but is absent from the console libc (01b probe
+# dl.symbols clock_nanosleep=n) and fails with ENOSYS: time.sleep() raised
+# "OSError: [Errno 78]" on the console (03b). nanosleep() works (probe PASS).
+ac_cv_func_clock_nanosleep=no
+# fdopendir() fails with EOPNOTSUPP on the console (03b: os.scandir(fd) and therefore
+# shutil.rmtree's fd-based path and os.fwalk failed). Without it, scandir/listdir take
+# no fd, os.fwalk is not defined and shutil.rmtree uses the path-based walk.
+ac_cv_func_fdopendir=no

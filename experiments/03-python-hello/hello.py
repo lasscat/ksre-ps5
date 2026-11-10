@@ -1,10 +1,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Experiment 03 test script, embedded into the payload by the Makefile (hello_py.h).
 # One line per check: "03 PASS|FAIL <name> <detail>", then "03 SUMMARY pass=N fail=M".
+import os
 import sys
 import time
 
 T0 = time.monotonic()
+# Start time: payload main() -> this line (main.c exports CLOCK_MONOTONIC as KSRE_PS5_T0).
+if os.environ.get("KSRE_PS5_T0"):
+    print("03 first-line t=%.3fs after payload start" % (
+        time.clock_gettime(time.CLOCK_MONOTONIC) - float(os.environ["KSRE_PS5_T0"])))
 ON_PS5 = sys.platform.startswith("freebsd")
 results = []
 
@@ -163,6 +168,12 @@ summary = "03 SUMMARY pass=%d fail=%d time=%.2fs%s" % (
     len(results) - len(failed), len(failed), time.monotonic() - T0,
     (" failed=" + ",".join(failed)) if failed else "")
 print(summary)
+try:
+    import resource
+    _rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss  # KiB (bytes on macOS)
+    print("03 memory ru_maxrss=%.1f MiB" % (_rss / (1024.0 * 1024 if sys.platform == "darwin" else 1024.0)))
+except Exception as e:  # report, do not fail the run
+    print("03 memory unavailable: %s" % e)
 
 # On the console also leave a log on /data (read it over FTP if stdout did not stream).
 if ON_PS5:

@@ -1,0 +1,33 @@
+From: ksre-ps5
+Subject: timemodule: test the value of HAVE_DECL_TZNAME, not only whether it is defined
+
+AC_CHECK_DECLS defines HAVE_DECL_TZNAME to 0 when tzname is not declared, but
+timemodule.c tests it with #ifdef/#ifndef, so "not declared" selects the tzname
+path. configure only runs that check when struct tm has no tm_zone, which is
+the PS5 case: the SDK's struct tm declares tm_zone/tm_gmtoff, but the console
+libc's localtime_s() does not fill them, so config.site turns tm_zone off and
+also answers tzname=no (the FreeBSD headers declare timezone() as a function).
+With this change init_timezone() uses the localtime()/strftime("%Z")/timegm()
+path, as intended for platforms without tzname.
+
+SPDX-License-Identifier: PSF-2.0
+--- a/Modules/timemodule.c	2026-11-10 00:46:26
++++ b/Modules/timemodule.c	2026-11-10 00:46:26
+@@ -1768,7 +1768,7 @@
+ \n\
+ Get information of the specified clock.");
+ 
+-#ifndef HAVE_DECL_TZNAME
++#if !HAVE_DECL_TZNAME
+ static void
+ get_zone(char *zone, int n, struct tm *p)
+ {
+@@ -1818,7 +1818,7 @@
+ 
+     And I'm lazy and hate C so nyer.
+      */
+-#ifdef HAVE_DECL_TZNAME
++#if HAVE_DECL_TZNAME
+     PyObject *otz0, *otz1;
+ #if !defined(MS_WINDOWS) || defined(MS_WINDOWS_DESKTOP) || defined(MS_WINDOWS_SYSTEM)
+     tzset();

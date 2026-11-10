@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-11-10 (milestone 03a). Statuses are deliberately separate: compiling is
+Last updated: 2026-11-10 (milestone 03b). Statuses are deliberately separate: compiling is
 not loading, loading is not running, running a test is not playing the game.
 
 | Status | Meaning |
@@ -22,8 +22,8 @@ not loading, loading is not running, running a test is not playing the game.
 | SDL2 display + image + text (`experiments/02a-sdl-display`) | yes (macOS arm64, dummy video driver) | yes | yes (pacbrew v0.41.1 and v0.40.3) | yes (elfldr and websrv homebrew launcher) | partial: ran to its end marker with captured logs; picture appears only when launched as homebrew; maintainer confirmed the picture and aspect ratio were correct; the console showed an error after the run ended (text not recorded) | n/a |
 | OpenGL / Ren'Py-style shaders (`experiments/02b-gl-shaders`) | yes (macOS GL 2.1: 7/7 read-back probes pass; GLES dialect not runnable on that host) | yes | yes (HW and SW pacbrew bundles) | yes (homebrew launcher; Mesa libraries found in the payload directory) | **SW bundle (OSMesa/llvmpipe): works**: GL 4.5 compat context, 7/7 read-back probes pass, 0 GL errors, 1080p scene 59.9 fps, full-screen blur 12–19 fps (300 frames per test; needs `-rdynamic`, exit via `_exit`). **HW bundle: fails**, no GL context (`sceAgcInit(8)` 0x8a6c002f on firmware 7.61, also with `-rdynamic`) | n/a |
 | Controller / audio / storage (`experiments/02c-input-audio`) | yes (macOS arm64, dummy drivers + virtual pad) | yes | yes | yes (homebrew launcher) | **works**: pad recognised natively as a GameController, 23/23 required controls + touchpad produce events, 48 kHz tone callback on time and audible, `/data/ksre-ps5/` write/fsync/rename/read round-trip and persistence across runs pass | n/a |
-| CPython 3.12.8 static (`ports/cpython`) | yes (host build Python 3.12.8; macOS arm64, CI Linux) | yes (no source patches; 2 configure patches) | yes: `libpython3.12.a`, 76 built-in extension modules; CPython's `python` program links (local + CI) | — | — | n/a |
-| Payload embedding Python (`experiments/03-python-hello`) | yes (same launcher + script on macOS arm64 against the host build: 10/10 checks) | yes | yes (local + CI) | — | — | n/a |
+| CPython 3.12.8 static (`ports/cpython`) | yes (host build Python 3.12.8; macOS arm64, CI Linux) | yes (2 configure patches + 3 run-time patches from 03b) | yes: `libpython3.12.a`, 76 built-in extension modules; CPython's `python` program links (local + CI) | yes | **yes: 272/272 stdlib imports; curated CPython tests 2494 run, 41 fail/err, all explained (console FS/libc semantics, no `_testcapi`)** | n/a |
+| Payload embedding Python (`experiments/03-python-hello`) | yes (same launcher + script on macOS arm64 against the host build: 10/10 checks) | yes | yes (local + CI) | yes | **yes: 10/10, interpreter ready 0.019 s, ru_maxrss 43 MiB** | n/a |
 | Ren'Py 8.5.3 native modules | — | — | — | — | — | — |
 | Ren'Py original test game | — | — | — | — | — | — |
 | KSRE v2.0.5 | — | — | — | — | — | — |
@@ -82,8 +82,17 @@ terminal/database/GUI modules are left out, with reasons in
 `--host=x86_64-unknown-freebsd` (so `sys.platform` is `freebsd`) after two small configure
 patches, takes math from the console's libc, and gets its cross-compiling answers from the
 01a/01b evidence. The pure-Python stdlib is packed into a 6.5 MB zip. A test payload that
-embeds Python links; it has not been run on a console yet (03b). Details:
+embeds Python links. Details:
 [experiments/03-python-hello](../experiments/03-python-hello/README.md).
+
+## Milestone 03b (CPython on the console) in short
+
+CPython 3.12.8 runs on the PS5 (fw 7.61) from an elfldr payload: interpreter ready in 0.02 s,
+all 272 stdlib modules import (except the ones not built), and a curated part of CPython's
+test suite (2494 tests: struct, json, zlib, time, float, math, threading, os, asyncio) passes
+except for 41 explained cases (console filesystem/libc semantics, no `_testcapi`). Five console
+problems were fixed in `ports/cpython` (`struct tm` zone, thread FTZ/DAZ, `clock_nanosleep`,
+`wcsftime` hang, `fdopendir`); see [ports/cpython](../ports/cpython/README.md).
 
 ## Milestone 02c (controller, audio, storage) in short
 

@@ -1,0 +1,27 @@
+From: ksre-ps5
+Subject: thread_pthread: clear MXCSR FTZ/DAZ in new threads on the PS5
+
+On the PS5 every thread starts with the SSE control register's flush-to-zero
+and denormals-are-zero bits set (console evidence: MXCSR 0x9fc0 in a new
+thread; Python threads reported subnormals flushed to zero). The embedding
+launcher clears them on its own threads; this does the same for threads
+started by the threading module, so floats behave as IEEE 754 in every
+Python thread. Only compiled for __PROSPERO__ (x86-64).
+
+SPDX-License-Identifier: PSF-2.0
+--- a/Python/thread_pthread.h	2026-11-10 00:47:54
++++ b/Python/thread_pthread.h	2026-11-10 00:47:54
+@@ -234,6 +234,13 @@
+     void *func_arg = callback->arg;
+     PyMem_RawFree(arg);
+ 
++#if defined(__PROSPERO__) && defined(__x86_64__)
++    /* PS5: threads start with MXCSR flush-to-zero and denormals-are-zero set,
++       which breaks IEEE 754 subnormals (float.fromhex('0x1p-1074') == 0.0).
++       MXCSR is per thread, so clear FTZ (bit 15) and DAZ (bit 6) here. */
++    __builtin_ia32_ldmxcsr(__builtin_ia32_stmxcsr() & ~0x8040u);
++#endif
++
+     func(func_arg);
+     return NULL;
+ }

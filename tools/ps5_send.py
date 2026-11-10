@@ -5,10 +5,13 @@
 Equivalent to the SDK's `prospero-deploy` (socat) transport, using only the
 Python standard library: connect, send the file, half-close the write side,
 then print everything the payload writes to stdout/stderr (elfldr connects the
-payload's stdio to this socket) until the payload exits or --timeout expires.
+payload's stdio to this socket) until the payload exits, an end-marker line
+(--until, default any "KSRE_PS5_<name>_END" line) arrives, --idle-timeout passes
+without output, or --timeout expires.
 """
 
 import argparse
+import re
 import socket
 import sys
 import time
@@ -22,6 +25,10 @@ def main() -> int:
     ap.add_argument("--log", help="also append received output to this file")
     ap.add_argument("--timeout", type=float, default=0,
                     help="stop after this many seconds (0 = until the payload exits)")
+    ap.add_argument("--idle-timeout", type=float, default=0,
+                    help="stop after this many seconds without output (0 = off)")
+    ap.add_argument("--until", default=r"KSRE_PS5_[A-Za-z0-9_]*_END",
+                    help="regex of the line that ends the run ('' = off)")
     ap.add_argument("--connect-timeout", type=float, default=10)
     args = ap.parse_args()
 
@@ -36,7 +43,9 @@ def main() -> int:
         return 3
 
     log = open(args.log, "ab") if args.log else None
-    start = time.monotonic()
+    start = last_data = time.monotonic()
+    until = re.compile(args.until.encode()) if args.until else None
+    pending = b""
     try:
         sock.settimeout(None)
         sock.sendall(data)
@@ -45,8 +54,13 @@ def main() -> int:
               file=sys.stderr)
         sock.settimeout(1.0)
         while True:
-            if args.timeout and time.monotonic() - start > args.timeout:
+            now = time.monotonic()
+            if args.timeout and now - start > args.timeout:
                 print("ps5_send: timeout reached", file=sys.stderr)
+                break
+            if args.idle_timeout and now - last_data > args.idle_timeout:
+                print("ps5_send: no output for %.0f s, stopping" % args.idle_timeout,
+                      file=sys.stderr)
                 break
             try:
                 chunk = sock.recv(65536)
@@ -54,11 +68,19 @@ def main() -> int:
                 continue
             if not chunk:
                 break
+            last_data = time.monotonic()
             sys.stdout.buffer.write(chunk)
             sys.stdout.buffer.flush()
             if log:
                 log.write(chunk)
                 log.flush()
+            if until:
+                lines = (pending + chunk).split(b"\n")
+                pending = lines.pop()[-4096:]
+                if any(until.search(line) for line in lines):
+                    print("ps5_send: end marker seen after %.1f s" % (time.monotonic() - start),
+                          file=sys.stderr)
+                    break
     except KeyboardInterrupt:
         print("\nps5_send: interrupted", file=sys.stderr)
     finally:

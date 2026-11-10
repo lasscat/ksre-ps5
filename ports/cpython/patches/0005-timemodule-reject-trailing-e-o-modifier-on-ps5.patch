@@ -1,0 +1,33 @@
+From: ksre-ps5
+Subject: timemodule: reject a format ending in a bare %E/%O on the PS5
+
+The console libc's wcsftime() does not return when the format string ends in
+the modifier "%E" or "%O" with no conversion character (console evidence:
+test_time.test_strftime_invalid_format hung on ' %E'; ' %O' likewise; every
+other ' %<char>' and "%Ec", "%Od", "%E ", ... return normally). Raise
+ValueError("Invalid format string") for that case instead, as CPython does
+on other platforms with invalid formats. Only compiled for __PROSPERO__.
+
+SPDX-License-Identifier: PSF-2.0
+--- a/Modules/timemodule.c	2026-11-10 09:14:28
++++ b/Modules/timemodule.c	2026-11-10 09:14:28
+@@ -832,6 +832,19 @@
+         }
+     }
+ #endif
++#if defined(__PROSPERO__) && defined(HAVE_WCSFTIME)
++    /* PS5: the console libc's wcsftime() never returns when the format ends in
++       the bare modifier "%E" or "%O" (console evidence, 03b). Reject it the
++       way other platforms reject an invalid format. */
++    for (const time_char *f = wcschr(format, '%'); f != NULL; f = wcschr(f + 2, '%')) {
++        if (f[1] == L'\0')
++            break;
++        if ((f[1] == L'E' || f[1] == L'O') && f[2] == L'\0') {
++            PyErr_SetString(PyExc_ValueError, "Invalid format string");
++            return NULL;
++        }
++    }
++#endif
+ 
+     /* I hate these functions that presume you know how big the output
+      * will be ahead of time...

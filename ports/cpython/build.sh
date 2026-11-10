@@ -16,6 +16,7 @@
 #   lib/libpython3.12.a      static interpreter + every enabled extension module, plus the
 #                            bundled helper archives it needs (libmpdec, expat, HACL SHA-2)
 #   python-home/lib/python312.zip   pure-Python stdlib (+ .pyc), home = /data/ksre-ps5/python
+#   python-home/lib/python312-tests.zip  curated Lib/test subset for the console (03b)
 #   embed.mk                 include/link flags for payloads that embed Python
 #   modules.txt              built-in extension modules (from the generated config.c)
 set -euo pipefail
@@ -153,6 +154,20 @@ build_ps5() {
   "$host_python" -I "${here}/make_stdlib_zip.py" \
     "${ps5_out}/install${target_prefix}/lib/python${pyver}" \
     "${ps5_out}/python-home/lib/python${pyver//./}.zip"
+  # Curated stdlib tests for the console (03b; experiments/03-python-hello/tests.py).
+  "$host_python" -I "${here}/make_stdlib_zip.py" "${src}/Lib" \
+    "${ps5_out}/python-home/lib/python${pyver//./}-tests.zip" \
+    --target-zip "${target_prefix}/lib/python${pyver//./}-tests.zip" \
+    --include test/__init__.py --include test/support --include test/lock_tests.py \
+    --include test/mapping_tests.py --include test/test_threading.py \
+    --include test/test_struct.py --include test/test_json --include test/test_zlib.py \
+    --include test/test_asyncio --include test/test_os.py --include test/test_time.py \
+    --include test/test_float.py --include test/test_math.py --include test/test_iter.py \
+    --include test/test_grammar.py --include test/typinganndata --include test/math_testcases.txt \
+    --include test/cmath_testcases.txt --include test/ieee754.txt \
+    --include test/formatfloat_testcases.txt --include test/floating_points.txt \
+    --include test/certdata/ssl_cert.pem --include test/certdata/ssl_key.pem \
+    --include test/certdata/keycert3.pem --include test/certdata/pycacert.pem
   echo "done: ${ps5_out}/lib/libpython${pyver}.a ($(wc -c < "${ps5_out}/lib/libpython${pyver}.a" | tr -d ' ') bytes)"
 }
 
