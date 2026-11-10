@@ -147,8 +147,9 @@ write_makefile() {
 }
 
 need_ps5() {
-  [ -n "${PS5_PAYLOAD_SDK:-}" ] && [ -x "${PS5_PAYLOAD_SDK}/bin/prospero-clang" ] ||
-    { echo "PS5_PAYLOAD_SDK is not set (source .local-config/env.sh or tools/fetch-sdk.sh)" >&2; exit 2; }
+  if [ -z "${PS5_PAYLOAD_SDK:-}" ] || [ ! -x "${PS5_PAYLOAD_SDK}/bin/prospero-clang" ]; then
+    echo "PS5_PAYLOAD_SDK is not set (source .local-config/env.sh or tools/fetch-sdk.sh)" >&2; exit 2
+  fi
   [ -f "$py_embed" ] || { echo "no PS5 CPython: ports/cpython/build.sh host && ports/cpython/build.sh ps5" >&2; exit 2; }
   [ -f "${sysroot}/lib/libavformat.a" ] || { echo "no sysroot: run ports/build-all-deps.sh" >&2; exit 2; }
   [ -f "${pb}/lib/libSDL2.a" ] || { echo "no pacbrew ${pacbrew_rel}: run tools/fetch-pacbrew.sh swgl" >&2; exit 2; }
