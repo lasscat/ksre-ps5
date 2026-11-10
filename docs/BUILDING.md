@@ -82,12 +82,23 @@ The host build needs only a C compiler and make (on Linux also `zlib1g-dev`); it
 `ports/build-all-deps.sh` (needs nasm, the SDK and `tools/fetch-pacbrew.sh swgl`) fills
 `build/sysroot`; see `ports/ffmpeg/README.md`.
 
-## Later milestones (preview)
+## Ren'Py payload (milestone 4a)
+
+```sh
+tools/fetch-upstreams.sh renpy pacbrew
+ports/renpy/build.sh            # -> build/ports/renpy/ksre-ps5-renpy.elf, runtime/, testgame/
+```
+
+Needs the CPython and sysroot builds above and a host `python3` with `venv`/`ensurepip` and
+network access: Cython 3.1.4 is installed into `build/ports/renpy/venv`, not globally.
+`ports/renpy/build.sh host` and `selftest-host` build and run the same code on the
+development machine. Details: `ports/renpy/README.md`.
+
+## Host tools
 
 `tools/check-env.sh --milestone 3` lists the additional host tools: meson,
 pkg-config, nasm (FFmpeg x86 assembly), autoconf/automake/libtool (for the C
-libraries of 3c; CPython itself needs none of them). Cython 3.1.4 will be
-installed into a project-local virtual environment, not globally.
+libraries of 3c; CPython itself needs none of them).
 
 ## Publication safety
 

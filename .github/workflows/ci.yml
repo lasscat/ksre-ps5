@@ -33,7 +33,7 @@ jobs:
       - name: Publication check (all history, including author e-mails)
         run: python3 tools/publication_check.py --all-history
       - name: Shell script lint
-        run: shellcheck -x tools/*.sh tools/lib/common.sh experiments/01-runtime-probe/link-inventory.sh experiments/02a-sdl-display/tools/fetch-font.sh ports/cpython/build.sh
+        run: shellcheck -x tools/*.sh tools/lib/common.sh experiments/01-runtime-probe/link-inventory.sh experiments/02a-sdl-display/tools/fetch-font.sh ports/cpython/build.sh ports/build-all-deps.sh ports/ffmpeg/build.sh ports/renpy/build.sh
 
   host-probe:
     # Logic test of the probe on ordinary hosts. Not evidence about the PS5.
@@ -182,6 +182,17 @@ jobs:
           make -C experiments/03-python-hello run-host | tee "$RUNNER_TEMP/03.txt"
           grep -q '^03 SUMMARY pass=10 fail=0 ' "$RUNNER_TEMP/03.txt"
           grep -q '^KSRE_PS5_03_END rc=0$' "$RUNNER_TEMP/03.txt"
+      - name: Build Ren'Py's C dependencies and link the Ren'Py 8.5.3 payload (04a)
+        run: |
+          sudo apt-get install -y -q nasm python3-venv
+          tools/fetch-upstreams.sh renpy pacbrew
+          ports/build-all-deps.sh
+          ports/renpy/build.sh
+          elf=build/ports/renpy/ksre-ps5-renpy.elf
+          file "$elf"
+          readelf -d "$elf" | grep NEEDED || true
+          sha256sum "$elf"
+          echo "modules: $(wc -l < build/ports/renpy/obj-ps5/modules.txt)"
       - name: Upload 02b payloads (compiled output only)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

@@ -173,6 +173,14 @@ the interpreter on a 16 MiB thread, in UTF-8 mode, and handles `SystemExit` itse
 of using `Py_RunMain` (which would `exit()` past the payload's `_exit()`). Module choices:
 [ports/cpython/README.md](../ports/cpython/README.md). Console start-up is milestone 03b.
 
+**Update (milestone 04a, host):** Ren'Py's modules build as planned (60 of 62; assimp
+stubbed in Python, Live2D left out) and link into `ksre-ps5-renpy.elf` with a launcher that
+runs `renpy.py` as `__main__`. Ren'Py needs two pure-Python packages at start-up (six, ecdsa)
+and a generated `renpy/vc_version.py` (otherwise it reports version 8.6.0). `_ctypes` and
+`_ssl` stay out of CPython (only Windows/macOS/Android or updater paths use them). The
+launcher checks all imported symbols with `dlsym` at start-up. See
+[ports/renpy/README.md](../ports/renpy/README.md).
+
 ### Media (source)
 
 * KSRE video: Matroska, **VP9 profile 0, 1920×1080, 30 fps + Opus 48 kHz**.
@@ -246,7 +254,7 @@ files stay unmodified wherever possible.
 | 2 | Does a GL context with GLSL shaders work, and how fast? | SDL2 + EGL/zink window drawing textured quads with Ren'Py-like shaders at 1080p; then OSMesa fallback | 2b |
 | 3 | Does the PS5 pad map to an SDL GameController? | SDL2 test payload printing controller events — **yes, native GameController (console 02c)** | 2c |
 | 4 | Can CPython 3.12 build and start? | static CPython that prints `sys.version`, imports `asyncio`, `zlib`, `json`, writes a file | 3a–3b |
-| 5 | Do Ren'Py's native modules build and import? | link `librenpy.a` + inittab, `import renpy` | 4a |
+| 5 | Do Ren'Py's native modules build and import? | link `librenpy.a` + inittab, `import renpy` — **links; the host twin imports and runs Ren'Py (04a); console import is 04b** | 4a |
 | 6 | Does Ren'Py run a game? | original tiny test game (dialogue, two choices, transform, audio, save/load, persistent, rollback) | 4b |
 | 7 | Do KSRE's videos play smoothly? | software VP9 1080p30 decode timing on the console | 6b |
 

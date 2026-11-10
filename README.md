@@ -32,7 +32,8 @@ Linux on PS5, browser) are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 |---|---|
 | `upstreams.lock` | Pinned upstream URLs, tags, commits and SHA-256 sums |
 | `experiments/` | Small executable experiments that settle one question each |
-| `ports/` | Build scripts, configure answers and patches for upstream components (CPython) |
+| `ports/` | Build scripts, configure answers and patches for upstream components (CPython, FFmpeg, Ren'Py) and the Ren'Py launcher |
+| `fixtures/` | Original test content (a tiny Ren'Py game with generated assets) |
 | `tools/` | Environment check, SDK/upstream fetchers, deploy helper, publication check |
 | `config/` | Sanitised configuration examples (real config stays in `.local-config/`) |
 | `docs/` | Architecture, building, console testing, game data, status |

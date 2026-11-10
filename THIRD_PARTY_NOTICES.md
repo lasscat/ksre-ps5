@@ -50,6 +50,14 @@ the pinned revision. This project therefore does not copy any renpy-build
 file; it reads renpy-build only from a user-fetched checkout and writes its
 own equivalents.
 
+The PS5 build (`ports/renpy`) compiles Ren'Py's own C sources and the C that Cython 3.1.4
+generates from Ren'Py's `.pyx` files (Cython: Apache-2.0; its generated code carries no licence
+restriction). `ports/renpy/stubs/assimp.py` is this project's code under MIT (Ren'Py's
+licence). The console runtime tree built by `ports/renpy/build.sh runtime` (never committed)
+contains Ren'Py's Python files and two packages Ren'Py imports: **six** 1.16.0 (MIT) and
+**ecdsa** 0.19.0 (MIT). The official Ren'Py 8.5.3 SDK is downloaded only to run the test game
+on the development machine as a reference; nothing from it is redistributed.
+
 **CPython** 3.12.8 — PSF License Version 2. Derivative works must retain the
 PSF copyright notice and summarise changes. `ports/cpython/patches/` holds this
 project's changes (configure only, summarised in `ports/cpython/README.md`). A payload

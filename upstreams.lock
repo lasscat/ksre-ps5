@@ -87,3 +87,24 @@ DEJAVU_SANS_SHA256=7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848
 FFMPEG_VERSION=7.1.5
 FFMPEG_URL=https://ffmpeg.org/releases/ffmpeg-7.1.5.tar.xz
 FFMPEG_SHA256=de668509caf9e35e3cd162473441fdb29538c6d96ed080292b3cf9e6fc5d558f
+
+# --- Ren'Py runtime (milestone 04a) ------------------------------------------
+# Pure-Python packages Ren'Py 8.5.3 imports at start-up (renpy/__init__.py: six;
+# renpy/savetoken.py: ecdsa). Versions from renpy-build requirements.txt (8.5.3);
+# both MIT. Universal wheels; SHA-256 from PyPI at pin time (2026-11-10).
+SIX_VERSION=1.16.0
+SIX_WHEEL_URL=https://files.pythonhosted.org/packages/d9/5a/e7c31adbe875f2abbb91bd84cf2dc52d792b5a01506781dbcf25c91daf11/six-1.16.0-py2.py3-none-any.whl
+SIX_WHEEL_SHA256=8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
+ECDSA_VERSION=0.19.0
+ECDSA_WHEEL_URL=https://files.pythonhosted.org/packages/00/e7/ed3243b30d1bec41675b6394a1daae46349dc2b855cb83be846a5a918238/ecdsa-0.19.0-py2.py3-none-any.whl
+ECDSA_WHEEL_SHA256=2cea9b88407fdac7bbeca0833b189e4c9c53f2ef1e1eaa29f6224dbc809b707a
+# Official Ren'Py 8.5.3 SDK, used ONLY on the development machine as the reference
+# runtime for fixtures/testgame (never shipped, never part of the payload). SHA-256 from
+# https://www.renpy.org/dl/8.5.3/checksums.txt (PGP-signed file; signature not checked).
+RENPY_SDK_URL=https://www.renpy.org/dl/8.5.3/renpy-8.5.3-sdk.zip
+RENPY_SDK_SHA256=ff57648f9c04f27e381c48af6d8e3ee3cdec296bed4d3831f47f09b0a71b505e
+# FriBidi source for the host twin only (ports/renpy/build.sh host): the version and
+# SHA-256 of the pinned pacbrew recipe (libfribidi/PKGBUILD), i.e. what the PS5 links.
+FRIBIDI_VERSION=1.0.15
+FRIBIDI_URL=https://github.com/fribidi/fribidi/releases/download/v1.0.15/fribidi-1.0.15.tar.xz
+FRIBIDI_SHA256=0bbc7ff633bfa208ae32d7e369cf5a7d20d5d2557a0b067c9aa98bcbf9967587
