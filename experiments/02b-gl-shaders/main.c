@@ -31,6 +31,9 @@
  *
  * Log markers: KSRE_PS5_02B_BEGIN / KSRE_PS5_02B_END ... fail=N
  */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1 /* glibc declares dladdr()/Dl_info (--dump-procs, crash dump) only with this */
+#endif
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 
