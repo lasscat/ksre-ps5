@@ -39,4 +39,5 @@ it draws nothing, so the homebrew launcher is not needed). The script needs a fe
 |---|---|---|---|---|---|---|---|
 | 2026-11-10 | macOS arm64 against build/host-python 3.12.8 | yes: `03 SUMMARY pass=10 fail=0`, `END rc=0`; `SystemExit(3)` → rc 3; uncaught error → traceback, rc 1 | — | — | — | — | logic check only |
 | 2026-11-10 | macOS arm64, `--home` with only the PS5 `python312.zip` (+ host `lib-dynload`) | yes: 10/10; stdlib modules load from the zip's `.pyc` through `zipimporter` | — | — | — | — | checks the bundle format, not the PS5 |
+| 2026-11-10 | CI Ubuntu 24.04 (run 42782874345): PS5 link + host twin (GCC 13, `-rdynamic`) | yes: 10/10, `EpollSelector` | yes | yes | — | — | first CI run failed only because the host twin lacked `-rdynamic` (fixed in dc7a80b) |
 | 2026-11-10 | PS5 cross-build, SDK v0.45, LLVM 18.1.8, pacbrew v0.40.3, `-rdynamic` | — | yes | yes: ELF64 x86-64 PIE, 30 MB with debug info, NEEDED `libkernel_web`, `libSceLibcInternal`, `libSceNet`; 347 undefined dynamic symbols, all resolved against the SDK stubs | — | — | |

@@ -93,7 +93,7 @@ zip). Left out: `test`, `idlelib`, `tkinter`, `turtle*`, `ensurepip`, `lib2to3`,
 |---|---|---|---|---|---|---|
 | 2026-11-10 | host build Python 3.12.8 (macOS arm64; CI Ubuntu) | yes | n/a | n/a | n/a | n/a |
 | 2026-11-10 | static CPython, macOS arm64 host, LLVM 18.1.8, SDK v0.45, pacbrew v0.40.3 | — | yes (all objects, no errors) | yes: `libpython3.12.a`; CPython's `python` program links as ELF64 x86-64 PIE, NEEDED `libkernel_web`, `libSceLibcInternal`, `libSceNet` only | — | — |
-| 2026-11-10 | same in CI (`ps5-cross-build`, Ubuntu, LLVM 18) | — | see CI | see CI | — | — |
+| 2026-11-10 | same in CI (`ps5-cross-build`, Ubuntu 24.04, LLVM 18, run 42782874345) | yes (host build Python, GCC 13) | yes | yes: same 76 modules, payload NEEDED identical; host Python + PS5 build ~3.5 min | — | — |
 
 ## Open points for 03b
 
