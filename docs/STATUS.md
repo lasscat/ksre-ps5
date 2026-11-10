@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-11-10 (milestone 03b). Statuses are deliberately separate: compiling is
+Last updated: 2026-11-10 (milestone 03c). Statuses are deliberately separate: compiling is
 not loading, loading is not running, running a test is not playing the game.
 
 | Status | Meaning |
@@ -24,6 +24,7 @@ not loading, loading is not running, running a test is not playing the game.
 | Controller / audio / storage (`experiments/02c-input-audio`) | yes (macOS arm64, dummy drivers + virtual pad) | yes | yes | yes (homebrew launcher) | **works**: pad recognised natively as a GameController, 23/23 required controls + touchpad produce events, 48 kHz tone callback on time and audible, `/data/ksre-ps5/` write/fsync/rename/read round-trip and persistence across runs pass | n/a |
 | CPython 3.12.8 static (`ports/cpython`) | yes (host build Python 3.12.8; macOS arm64, CI Linux) | yes (2 configure patches + 3 run-time patches from 03b) | yes: `libpython3.12.a`, 76 built-in extension modules; CPython's `python` program links (local + CI) | yes | **yes: 272/272 stdlib imports; curated CPython tests 2494 run, 41 fail/err, all explained (console FS/libc semantics, no `_testcapi`)** | n/a |
 | Payload embedding Python (`experiments/03-python-hello`) | yes (same launcher + script on macOS arm64 against the host build: 10/10 checks) | yes | yes (local + CI) | yes | **yes: 10/10, interpreter ready 0.019 s, ru_maxrss 43 MiB** | n/a |
+| Ren'Py C dependencies (`ports/ffmpeg`, `ports/build-all-deps.sh`) | n/a | yes (LGPL FFmpeg 7.1.5 with x86 asm, no patches; other libraries from pacbrew v0.40.3) | yes: `build/sysroot` static libraries; a link check of FFmpeg, FreeType, HarfBuzz, FriBidi, libpng, libjpeg, libwebp, SDL2_image, zlib/bz2/xz; Ren'Py `ffmedia.c`/`ftsupport.c` compile against them | n/a | not run (decode benchmark deferred to 06b) | n/a |
 | Ren'Py 8.5.3 native modules | — | — | — | — | — | — |
 | Ren'Py original test game | — | — | — | — | — | — |
 | KSRE v2.0.5 | — | — | — | — | — | — |
@@ -93,6 +94,13 @@ test suite (2494 tests: struct, json, zlib, time, float, math, threading, os, as
 except for 41 explained cases (console filesystem/libc semantics, no `_testcapi`). Five console
 problems were fixed in `ports/cpython` (`struct tm` zone, thread FTZ/DAZ, `clock_nanosleep`,
 `wcsftime` hang, `fdopendir`); see [ports/cpython](../ports/cpython/README.md).
+
+## Milestone 03c (Ren'Py C dependencies) in short
+
+FFmpeg 7.1.5 is built LGPL-only (native decoders, x86 asm, no external codec libraries) into
+`build/sysroot`; the text and image libraries are staged from the pinned pacbrew bundle, and a
+link-only program proves they all resolve. AVIF, assimp and Live2D are left out. Details,
+versions and licences: [ports/ffmpeg](../ports/ffmpeg/README.md).
 
 ## Milestone 02c (controller, audio, storage) in short
 

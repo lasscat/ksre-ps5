@@ -77,3 +77,13 @@ DEJAVU_URL=https://github.com/dejavu-fonts/dejavu-fonts/releases/download/versio
 DEJAVU_TARBALL_SHA256=fa9ca4d13871dd122f61258a80d01751d603b4d3ee14095d65453b4e846e17d7
 DEJAVU_SANS_MEMBER=dejavu-fonts-ttf-2.37/ttf/DejaVuSans.ttf
 DEJAVU_SANS_SHA256=7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954
+
+# --- Ren'Py C dependencies (milestone 03c) -----------------------------------
+# FFmpeg is built by ports/ffmpeg/build.sh as an LGPL-only static build. Ren'Py
+# 8.5.3 ffmedia.c supports libavformat 61 (7.1) and 62 (8.x); 7.1.5 is the latest
+# 7.1 patch release. renpy-build uses 4.3.1 plus two patches that are already
+# fixed upstream in 7.1 (yuv2rgb unaligned store, ff_seek_frame_binary). SHA-256
+# computed at pin time (2026-11-10) from ffmpeg.org; no GPG check on the host.
+FFMPEG_VERSION=7.1.5
+FFMPEG_URL=https://ffmpeg.org/releases/ffmpeg-7.1.5.tar.xz
+FFMPEG_SHA256=de668509caf9e35e3cd162473441fdb29538c6d96ed080292b3cf9e6fc5d558f

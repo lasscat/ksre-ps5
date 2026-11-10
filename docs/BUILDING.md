@@ -77,6 +77,11 @@ make -C experiments/03-python-hello ps5 run-host
 The host build needs only a C compiler and make (on Linux also `zlib1g-dev`); it is the
 `--with-build-python` for the cross build. Details: `ports/cpython/README.md`.
 
+## Ren'Py C dependencies
+
+`ports/build-all-deps.sh` (needs nasm, the SDK and `tools/fetch-pacbrew.sh swgl`) fills
+`build/sysroot`; see `ports/ffmpeg/README.md`.
+
 ## Later milestones (preview)
 
 `tools/check-env.sh --milestone 3` lists the additional host tools: meson,
