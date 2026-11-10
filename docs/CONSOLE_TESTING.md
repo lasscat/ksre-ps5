@@ -100,6 +100,35 @@ is no "correct" answer for INFO lines. Interpretation:
 The log contains the console model and firmware version. Keep it local; do
 not attach raw logs to public issues.
 
+## Payloads that draw to the TV (milestone 2a onwards)
+
+**Do not send graphics payloads straight to elfldr.** A payload sent to the
+loader on port 9021 is a background process. Experiment 02a, sent that way,
+presented 600 frames at 59.9 fps with no SDL error and nothing appeared on the
+TV (console log + maintainer observation). Started through the websrv
+*homebrew launcher* instead, the same program runs as a foreground
+application (`sceSystemServiceGetAppIdOfRunningBigApp` non-zero, pad and
+keyboard open successfully) and the maintainer reported the picture appeared.
+The launcher source (`websrv/src/ps5/hbldr.c`) explains why: it creates a
+fake application (`FAKE00000`), launches it with `sceSystemServiceLaunchApp`
+and substitutes the homebrew ELF.
+
+Requirements on the console: ps5-payload-websrv (HTTP 8080) and ftpsrv (FTP
+2121) running. websrv listens **without authentication**: use it only on a
+trusted LAN, and note it keeps listening until the console restarts.
+
+```sh
+tools/fetch-websrv.sh                       # pinned, sha256-verified ELF
+tools/deploy.sh "$(tools/fetch-websrv.sh)"  # one-time: start websrv via elfldr
+tools/deploy-hb.sh ksre-02a build/experiments/02a-sdl-display/ps5/ksre-ps5-02a-sdl-display.elf
+tools/deploy-hb.sh ksre-02a build/experiments/02a-sdl-display/ps5/ksre-ps5-02a-sdl-display.elf --no-upload   # run again
+```
+
+`deploy-hb.sh` uploads `eboot.elf` over FTP to `/data/homebrew/<name>/`,
+launches it with `GET /hbldr?path=...&pipe=1`, and saves the streamed output
+to `.local-work/logs/<name>-hb-<UTC>.log`. Remove the directory afterwards
+with any FTP client if you want a clean `/data/homebrew`.
+
 ## Cleanup
 
 The probe only writes inside `/data/ksre-ps5/`. Delete that directory (for

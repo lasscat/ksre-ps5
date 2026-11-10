@@ -33,7 +33,7 @@ jobs:
       - name: Publication check (all history, including author e-mails)
         run: python3 tools/publication_check.py --all-history
       - name: Shell script lint
-        run: shellcheck -x tools/*.sh tools/lib/common.sh experiments/01-runtime-probe/link-inventory.sh
+        run: shellcheck -x tools/*.sh tools/lib/common.sh experiments/01-runtime-probe/link-inventory.sh experiments/02a-sdl-display/tools/fetch-font.sh
 
   host-probe:
     # Logic test of the probe on ordinary hosts. Not evidence about the PS5.
@@ -48,6 +48,34 @@ jobs:
         run: |
           make -C experiments/01-runtime-probe run-host | tee "$RUNNER_TEMP/probe.txt"
           grep -q '^KSRE_PS5_PROBE_END .* fail=0 ' "$RUNNER_TEMP/probe.txt"
+
+  host-sdl-display:
+    # Headless logic test of experiment 02a (SDL dummy video driver) with the
+    # system SDL2. Not evidence about the PS5; SDL2 here never reaches a PS5 build.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install SDL2, SDL2_image, SDL2_ttf
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev
+          else
+            brew install sdl2 sdl2_image sdl2_ttf
+          fi
+      - name: Cache the pinned font download
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: external/toolchains/downloads
+          key: dejavu-${{ hashFiles('upstreams.lock') }}
+      - name: Build and run 02a on host (dummy video driver)
+        run: |
+          make -C experiments/02a-sdl-display run-host | tee "$RUNNER_TEMP/02a.txt"
+          grep -q '^KSRE_PS5_02A_END .* fail=0$' "$RUNNER_TEMP/02a.txt"
 
   ps5-cross-build:
     runs-on: ubuntu-24.04
@@ -68,6 +96,8 @@ jobs:
         run: |
           tools/fetch-sdk.sh | tee "$RUNNER_TEMP/sdk.txt"
           grep '^export PS5_PAYLOAD_SDK=' "$RUNNER_TEMP/sdk.txt" | sed 's/^export //; s/"//g' >> "$GITHUB_ENV"
+      - name: Fetch pinned pacbrew bundle v0.41.1 (SHA-256 verified)
+        run: tools/fetch-pacbrew.sh hwgl | tee "$RUNNER_TEMP/pacbrew.txt"
       - name: Environment check (milestone 1)
         run: tools/check-env.sh --milestone 1
       - name: Cross-compile and link the probe payload
@@ -80,6 +110,21 @@ jobs:
           sha256sum "$elf"
       - name: Link inventory for CPython configure
         run: make -C experiments/01-runtime-probe link-inventory
+      - name: Cross-build and link experiment 02a (SDL2 display) with the pacbrew bundle
+        run: |
+          make -C experiments/02a-sdl-display ps5
+          elf=build/experiments/02a-sdl-display/ps5/ksre-ps5-02a-sdl-display.elf
+          file "$elf"
+          readelf -h "$elf" | grep -E 'Class|Machine|Type'
+          readelf -d "$elf" | grep NEEDED || true
+          sha256sum "$elf"
+      - name: Upload 02a payload (compiled output only)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ksre-ps5-02a-sdl-display-elf
+          path: build/experiments/02a-sdl-display/ps5/ksre-ps5-02a-sdl-display.elf
+          retention-days: 14
+          if-no-files-found: error
       - name: Upload probe payload (compiled output only)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

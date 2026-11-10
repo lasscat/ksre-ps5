@@ -61,6 +61,8 @@ PSF copyright notice and summarise changes.
 | ps5-payload-dev SDL (SDL2 2.30 port) | Zlib | |
 | pacbrew-repo recipes / bundles | GPL-3.0 (recipes); each package keeps its own licence | Mesa: MIT and others; FFmpeg: LGPL/GPL depending on configuration |
 | ps5-payload-elfldr, websrv | GPL-3.0-or-later | run on the console; not linked |
+| SDL2_image, SDL2_ttf (pacbrew bundle) | Zlib | linked statically by `experiments/02a-sdl-display` |
+| DejaVu Sans 2.37 | Bitstream Vera licence + public-domain changes (permissive; redistribution allowed, name restrictions on modified versions) | fetched at build time (sha256-pinned, never committed) and embedded in the 02a experiment binary; a distributed binary must carry the DejaVu/Bitstream Vera notice |
 | FFmpeg | LGPL-2.1-or-later as configured by this project (no GPL components) | |
 | FreeType | FreeType Licence (BSD-style, GPLv3-compatible) or GPLv2 | |
 | HarfBuzz | "Old MIT" | |

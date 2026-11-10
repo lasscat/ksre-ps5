@@ -181,7 +181,11 @@ fallback. Ren'Py's renderer is selected with `RENPY_RENDERER=gl2|gles2`.
   fsync, rename, persistence across runs and free space).
 * Ren'Py honours `RENPY_PATH_TO_SAVES` (source), so saves and persistent data
   go to e.g. `/data/ksre-ps5/saves/sh.fhs.ksre/` without patching Ren'Py.
-* Development loading: send the ELF to elfldr on TCP 9021.
+* Development loading: send *non-graphical* payloads to elfldr on TCP 9021.
+  **Correction (console evidence, milestone 2a):** a payload that draws to the
+  TV must run as a foreground application; sent to elfldr it presents frames
+  but nothing is shown. Use websrv's homebrew launcher (`/hbldr`, which runs
+  the ELF as a fake big app); see `docs/CONSOLE_TESTING.md`.
 * User-facing launching: websrv's homebrew convention
   `/data/homebrew/<Name>/eboot.elf` + `sce_sys/icon0.png` (doc).
 * Installable application: the SDK's `install_app` sample shows an

@@ -61,4 +61,15 @@ ELFLDR_ELF_SHA256=82f6227610172c98bad6efe68219fc93a10027035991f47eb4b75532d02340
 WEBSRV_REPO=https://github.com/ps5-payload-dev/websrv.git
 WEBSRV_COMMIT=7748df9d2a43822a5ebfda149f43d4f2696d640b
 WEBSRV_RELEASE=v0.35
+WEBSRV_ELF_URL=https://github.com/ps5-payload-dev/websrv/releases/download/v0.35/websrv-ps5.elf
 WEBSRV_ELF_SHA256=25501b41887a42789792d1367edd2fc892454bfe6b0b1519bc36456a581f264c
+
+# --- Fonts fetched at build time (never committed) ---------------------------
+# DejaVu Sans 2.37 (Bitstream Vera licence + public-domain changes; permissive,
+# redistributable). Used only by experiments/02a-sdl-display. Hashes computed
+# at pin time (2026-11-10) from the GitHub release asset.
+DEJAVU_VERSION=2.37
+DEJAVU_URL=https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2
+DEJAVU_TARBALL_SHA256=fa9ca4d13871dd122f61258a80d01751d603b4d3ee14095d65453b4e846e17d7
+DEJAVU_SANS_MEMBER=dejavu-fonts-ttf-2.37/ttf/DejaVuSans.ttf
+DEJAVU_SANS_SHA256=7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954
