@@ -65,24 +65,68 @@ funcs=(
   fpathconf backtrace posix_memalign aligned_alloc
 )
 
+# Headers an autoconf-style test or CPython source file would see. Used for the
+# second pass over names that do not link bare.
+hdrs='#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/mman.h>
+#include <sys/utsname.h>
+#include <sys/wait.h>
+#include <net/if.h>
+#include <fcntl.h>
+#include <grp.h>
+#include <pthread.h>
+#include <sched.h>
+#include <semaphore.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <libutil.h>'
+
 ok=0
 missing=()
+inline_only=()
+decl_only=()
+undeclared=()
 report="${out_dir}/link-inventory.txt"
 : > "$report"
 for f in "${funcs[@]}"; do
+  # Pass 1: what autoconf does - own prototype, no headers.
   cat > "${work}/t.c" <<EOF
 char ${f}(void);
 int main(void) { return (int)(long)&${f}; }
 EOF
   if "$cc" -w -o "${work}/t.elf" "${work}/t.c" >/dev/null 2>"${work}/err.txt"; then
-    echo "link=yes ${f}" >> "$report"
+    echo "class=links ${f}" >> "$report"
     ok=$((ok + 1))
+    continue
+  fi
+  missing+=("$f")
+  # Pass 2: with the SDK headers. Taking the address works for real functions
+  # and static inlines; it fails to compile when nothing declares the name.
+  cat > "${work}/h.c" <<EOF
+#define _GNU_SOURCE 1
+#define __BSD_VISIBLE 1
+${hdrs}
+int main(void) { void *volatile p = (void *)&${f}; return p == 0; }
+EOF
+  if "$cc" -w -o "${work}/h.elf" "${work}/h.c" >/dev/null 2>"${work}/err.txt"; then
+    echo "class=header-inline ${f}" >> "$report"
+    inline_only+=("$f")
+  elif "$cc" -w -fsyntax-only "${work}/h.c" >/dev/null 2>&1; then
+    echo "class=absent-declared ${f}" >> "$report"
+    decl_only+=("$f")
   else
-    echo "link=no  ${f}" >> "$report"
-    missing+=("$f")
+    echo "class=absent-undeclared ${f}" >> "$report"
+    undeclared+=("$f")
   fi
 done
 
-echo "link inventory: ${ok}/${#funcs[@]} functions link for x86_64-sie-ps5"
-echo "not linkable (${#missing[@]}): ${missing[*]+"${missing[*]}"}"
+echo "link inventory: ${ok}/${#funcs[@]} functions link for x86_64-sie-ps5 (bare, as autoconf tests them)"
+echo "not linkable bare (${#missing[@]}): ${missing[*]+"${missing[*]}"}"
+echo "  header-inline only, needs config.site ac_cv_func_X=yes (${#inline_only[@]}): ${inline_only[*]+"${inline_only[*]}"}"
+echo "  absent, declared in a header but no symbol (${#decl_only[@]}): ${decl_only[*]+"${decl_only[*]}"}"
+echo "  absent, not declared anywhere (${#undeclared[@]}): ${undeclared[*]+"${undeclared[*]}"}"
 echo "full report: ${report}"

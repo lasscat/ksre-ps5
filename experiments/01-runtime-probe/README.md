@@ -80,23 +80,26 @@ the maintainer's private notes, not here.
 Status after this milestone: `loader` **yes**, `console` **yes** (see
 [docs/STATUS.md](../../docs/STATUS.md)).
 
-### Link inventory (CI, 2026-11-09)
+### Link inventory (local + CI, 2026-11-10)
 
-152 of 173 functions link. Not linkable: `nice copy_file_range dup3 mremap
-memfd_create pthread_getattr_np sem_clockwait sched_setaffinity
-getgrouplist ttyname openpty forkpty ctermid accept4 if_nameindex
-epoll_create1 iconv_open getentropy getrandom uname confstr`.
+Local (macOS arm64, llvm@18 18.1.8, SDK v0.45) and CI agree: the probe links
+to an ELF64 x86-64 payload with the same NEEDED list (`libkernel_web`,
+`libSceLibcInternal`, `libSceNet`), and 152 of 173 functions link bare. The
+bare test is autoconf's `AC_CHECK_FUNCS` (dummy prototype, take the address,
+link), so it predicts what CPython's `configure` concludes. The 21 that do not
+link are re-tested with the SDK headers included and sorted into classes:
 
-The test is the same as autoconf's `AC_CHECK_FUNCS` (declare a dummy
-prototype, take the address, link), so it predicts what CPython's
-`configure` will conclude. One known false negative: `uname` is a
-`static inline` wrapper around `__xuname` in the SDK's `sys/utsname.h`, so
-it works when the header is included (the probe itself calls it) but needs
-`ac_cv_func_uname=yes` in CPython's `config.site`. Several others
-(`confstr`, `accept4`, `dup3`, `ttyname`, `nice`) are declared in the SDK
-headers but have no linkable symbol; configure will correctly treat them as
-absent. Whether linkable names also resolve at run time is checked by the
-probe's `dl.symbols` inventory on the console.
+| Class | Names | `config.site` |
+|---|---|---|
+| links (152) | everything else in the list | none |
+| header-inline only (1) | `uname` (`static inline` around `__xuname` in `sys/utsname.h`) | `ac_cv_func_uname=yes` |
+| absent, declared in a header but no symbol (10) | `nice dup3 getgrouplist ttyname openpty forkpty ctermid accept4 if_nameindex confstr` | `=no` (configure already says no) |
+| absent, not declared (10) | `copy_file_range mremap memfd_create pthread_getattr_np sem_clockwait sched_setaffinity epoll_create1 iconv_open getentropy getrandom` | `=no` |
+
+`iconv_open` is only declared in `sys/iconv.h` with a non-POSIX 3-argument
+signature and has no symbol, so it counts as absent. Whether linkable names
+also resolve at run time is checked by the probe's `dl.symbols` inventory on
+the console.
 
 The console run (2026-11-10) showed that `dl.symbols` — which uses
 `dlsym(RTLD_DEFAULT)` — only sees symbols exported by loaded shared modules

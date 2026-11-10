@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-11-10 (milestone 02c). Statuses are deliberately separate: compiling is
+Last updated: 2026-11-10 (milestone 01a). Statuses are deliberately separate: compiling is
 not loading, loading is not running, running a test is not playing the game.
 
 | Status | Meaning |
@@ -17,8 +17,8 @@ not loading, loading is not running, running a test is not playing the game.
 
 | Component | host | compiles | links | loader | console | game |
 |---|---|---|---|---|---|---|
-| Runtime probe (`experiments/01-runtime-probe`) | yes (macOS arm64; CI Linux + macOS) | yes (Apple clang, SDK v0.45 headers) | yes (CI, LLVM 18) | yes (elfldr 9021) | yes (fw 7.61, 29 pass / 1 fail) | n/a |
-| Link inventory for CPython configure | n/a | n/a | yes (CI): 152/173 link | n/a | n/a | n/a |
+| Runtime probe (`experiments/01-runtime-probe`) | yes (macOS arm64; CI Linux + macOS) | yes (Apple clang, SDK v0.45 headers) | yes (local + CI, LLVM 18) | yes (elfldr 9021) | yes (fw 7.61, 29 pass / 1 fail) | n/a |
+| Link inventory for CPython configure | n/a | n/a | yes (local + CI): 152/173 link; header-aware: 1 header-inline (`uname`), 20 absent | n/a | n/a | n/a |
 | SDL2 display + image + text (`experiments/02a-sdl-display`) | yes (macOS arm64, dummy video driver) | yes | yes (pacbrew v0.41.1 and v0.40.3) | yes (elfldr and websrv homebrew launcher) | partial: ran to its end marker with captured logs; picture appears only when launched as homebrew; maintainer confirmed the picture and aspect ratio were correct; the console showed an error after the run ended (text not recorded) | n/a |
 | OpenGL / Ren'Py-style shaders (`experiments/02b-gl-shaders`) | yes (macOS GL 2.1: 7/7 read-back probes pass; GLES dialect not runnable on that host) | yes | yes (HW and SW pacbrew bundles) | yes (homebrew launcher; Mesa libraries found in the payload directory) | **SW bundle (OSMesa/llvmpipe): works**: GL 4.5 compat context, 7/7 read-back probes pass, 0 GL errors, 1080p scene 59.9 fps, full-screen blur 12–19 fps (300 frames per test; needs `-rdynamic`, exit via `_exit`). **HW bundle: fails**, no GL context (`sceAgcInit(8)` 0x8a6c002f on firmware 7.61, also with `-rdynamic`) | n/a |
 | Controller / audio / storage (`experiments/02c-input-audio`) | yes (macOS arm64, dummy drivers + virtual pad) | yes | yes | yes (homebrew launcher) | **works**: pad recognised natively as a GameController, 23/23 required controls + touchpad produce events, 48 kHz tone callback on time and audible, `/data/ksre-ps5/` write/fsync/rename/read round-trip and persistence across runs pass | n/a |
