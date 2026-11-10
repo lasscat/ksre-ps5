@@ -181,9 +181,18 @@ with `_exit()` rather than returning from `main`. See [GRAPHICS.md](GRAPHICS.md)
 
 * SDL2's PS5 port provides joystick (ScePad), audio (SceAudioOut), keyboard
   and filesystem drivers (source). The PS5 pad is exposed with GUID
-  `0300d0424c050000e60c000011810000`, which does not match SDL's built-in
-  PS5 controller mappings — a GameController mapping may be needed for
-  Ren'Py's controller navigation (inference; milestone 2c).
+  `0300d0424c050000e60c000011810000`.
+* **Controller mapping (console, milestone 02c):** SDL already treats this pad as a
+  GameController, because the driver supplies the mapping itself; **no mapping string or
+  `gamecontrollerdb.txt` entry is needed**. SDL reports
+  `a:b0,b:b1,x:b2,y:b3,start:b6,leftstick:b7,rightstick:b8,leftshoulder:b9,rightshoulder:b10,dpup:b11,dpdown:b12,dpleft:b13,dpright:b14,leftx:a0,lefty:a1,rightx:a2,righty:a3,lefttrigger:a4,righttrigger:a5,touchpad:b4`.
+  There is no `back`, `guide`, `misc1` or paddle, and the PS and Create buttons are not
+  delivered. Ren'Py's default `config.pad_bindings` therefore work as they are: A/R2 dismiss,
+  B/Options menu, L1/L2 rollback, R1 rollforward, Y hide windows, X alternate, D-pad/sticks
+  navigate; only the `back`/`guide` bindings are unreachable. Triggers arrive as
+  GameController axes 0…32767 (rest 0), above Ren'Py's ±12288 threshold when pulled. A second
+  GameController, `PS5 Remote Control` (no axes), is also listed and sends no events.
+  Audio opens at a fixed 48 kHz (F32 stereo works); SDL converts other rates.
 * Fonts render with FreeType + HarfBuzz (KSRE ships CJK fonts and
   OpenDyslexic for accessibility).
 
@@ -226,7 +235,7 @@ files stay unmodified wherever possible.
 |---|---|---|---|
 | 1 | Payload runtime capabilities unknown (TLS, threads, storage, JIT, kqueue, memory) | `experiments/01-runtime-probe` on the console | 1b |
 | 2 | Does a GL context with GLSL shaders work, and how fast? | SDL2 + EGL/zink window drawing textured quads with Ren'Py-like shaders at 1080p; then OSMesa fallback | 2b |
-| 3 | Does the PS5 pad map to an SDL GameController? | SDL2 test payload printing controller events | 2c |
+| 3 | Does the PS5 pad map to an SDL GameController? | SDL2 test payload printing controller events — **yes, native GameController (console 02c)** | 2c |
 | 4 | Can CPython 3.12 build and start? | static CPython that prints `sys.version`, imports `asyncio`, `zlib`, `json`, writes a file | 3a–3b |
 | 5 | Do Ren'Py's native modules build and import? | link `librenpy.a` + inittab, `import renpy` | 4a |
 | 6 | Does Ren'Py run a game? | original tiny test game (dialogue, two choices, transform, audio, save/load, persistent, rollback) | 4b |

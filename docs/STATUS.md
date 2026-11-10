@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-11-10 (milestone 02b). Statuses are deliberately separate: compiling is
+Last updated: 2026-11-10 (milestone 02c). Statuses are deliberately separate: compiling is
 not loading, loading is not running, running a test is not playing the game.
 
 | Status | Meaning |
@@ -21,7 +21,7 @@ not loading, loading is not running, running a test is not playing the game.
 | Link inventory for CPython configure | n/a | n/a | yes (CI): 152/173 link | n/a | n/a | n/a |
 | SDL2 display + image + text (`experiments/02a-sdl-display`) | yes (macOS arm64, dummy video driver) | yes | yes (pacbrew v0.41.1 and v0.40.3) | yes (elfldr and websrv homebrew launcher) | partial: ran to its end marker with captured logs; picture appears only when launched as homebrew; maintainer confirmed the picture and aspect ratio were correct; the console showed an error after the run ended (text not recorded) | n/a |
 | OpenGL / Ren'Py-style shaders (`experiments/02b-gl-shaders`) | yes (macOS GL 2.1: 7/7 read-back probes pass; GLES dialect not runnable on that host) | yes | yes (HW and SW pacbrew bundles) | yes (homebrew launcher; Mesa libraries found in the payload directory) | **SW bundle (OSMesa/llvmpipe): works**: GL 4.5 compat context, 7/7 read-back probes pass, 0 GL errors, 1080p scene 59.9 fps, full-screen blur 12–19 fps (300 frames per test; needs `-rdynamic`, exit via `_exit`). **HW bundle: fails**, no GL context (`sceAgcInit(8)` 0x8a6c002f on firmware 7.61, also with `-rdynamic`) | n/a |
-| Input mapping / audio experiments | — | — | — | — | — | — |
+| Controller / audio / storage (`experiments/02c-input-audio`) | yes (macOS arm64, dummy drivers + virtual pad) | yes | yes | yes (homebrew launcher) | **works**: pad recognised natively as a GameController, 23/23 required controls + touchpad produce events, 48 kHz tone callback on time and audible, `/data/ksre-ps5/` write/fsync/rename/read round-trip and persistence across runs pass | n/a |
 | CPython 3.12.8 | — | — | — | — | — | — |
 | Ren'Py 8.5.3 native modules | — | — | — | — | — | — |
 | Ren'Py original test game | — | — | — | — | — | — |
@@ -71,3 +71,12 @@ firmware 7.61, so it provides no GL context. Decision: software path, `gl2`,
 playable at those speeds is not yet known. Details, the draft upstream
 issues and the root-cause write-up: [GRAPHICS.md](GRAPHICS.md) and
 [experiments/02b-gl-shaders](../experiments/02b-gl-shaders/README.md).
+
+## Milestone 02c (controller, audio, storage) in short
+
+On the console, SDL's PS5 driver exposes the pad as a GameController without any extra
+mapping string. Every face button, D-pad direction, shoulder, stick click, Options, touchpad
+click, both sticks and both triggers produced controller events; the PS and Create buttons
+are not delivered. A tone generated in code played through SDL audio (48 kHz, callback on
+time, heard by the maintainer) and a file round-trip on `/data/ksre-ps5/` passed and
+persisted across runs. Details: [experiments/02c-input-audio](../experiments/02c-input-audio/README.md).
