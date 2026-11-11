@@ -72,6 +72,10 @@ label ksre_selftest:
         pfile = os.path.join(config.savedir, "persistent")
         ksre_result("persistent", os.path.exists(pfile), "runs=%d file=%s" % (persistent.ksre_selftest_runs, pfile))
 
+        # The interactive checklist needs the game menu (save/load via the pad).
+        ksre_result("gamemenu", bool(_game_menu_screen) and (renpy.has_label(_game_menu_screen) or renpy.has_screen(_game_menu_screen))
+                    and renpy.has_label("load_screen"), "screen=%r" % (_game_menu_screen,))
+
     scene ksre_bg
     show ksre_mark at ksre_bounce
     "Self-test: dialogue and text rendering.{w=0.3}{nw}"

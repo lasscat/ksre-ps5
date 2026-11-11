@@ -254,8 +254,8 @@ files stay unmodified wherever possible.
 | 2 | Does a GL context with GLSL shaders work, and how fast? | SDL2 + EGL/zink window drawing textured quads with Ren'Py-like shaders at 1080p; then OSMesa fallback | 2b |
 | 3 | Does the PS5 pad map to an SDL GameController? | SDL2 test payload printing controller events — **yes, native GameController (console 02c)** | 2c |
 | 4 | Can CPython 3.12 build and start? | static CPython that prints `sys.version`, imports `asyncio`, `zlib`, `json`, writes a file | 3a–3b |
-| 5 | Do Ren'Py's native modules build and import? | link `librenpy.a` + inittab, `import renpy` — **links; the host twin imports and runs Ren'Py (04a); console import is 04b** | 4a |
-| 6 | Does Ren'Py run a game? | original tiny test game (dialogue, two choices, transform, audio, save/load, persistent, rollback) | 4b |
+| 5 | Do Ren'Py's native modules build and import? | link `librenpy.a` + inittab, `import renpy` — **yes: 60 modules, console run in 04b** | 4a |
+| 6 | Does Ren'Py run a game? | original tiny test game (dialogue, two choices, transform, audio, save/load, persistent, rollback) — **yes on the console (04b); no child processes allowed (a fork/exec powers the PS5 off), see ports/renpy** | 4b |
 | 7 | Do KSRE's videos play smoothly? | software VP9 1080p30 decode timing on the console | 6b |
 
 ## Effort estimate

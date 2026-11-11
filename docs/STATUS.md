@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-11-10 (milestone 04a). Statuses are deliberately separate: compiling is
+Last updated: 2026-11-11 (milestone 04b). Statuses are deliberately separate: compiling is
 not loading, loading is not running, running a test is not playing the game.
 
 | Status | Meaning |
@@ -25,8 +25,8 @@ not loading, loading is not running, running a test is not playing the game.
 | CPython 3.12.8 static (`ports/cpython`) | yes (host build Python 3.12.8; macOS arm64, CI Linux) | yes (2 configure patches + 3 run-time patches from 03b) | yes: `libpython3.12.a`, 76 built-in extension modules; CPython's `python` program links (local + CI) | yes | **yes: 272/272 stdlib imports; curated CPython tests 2494 run, 41 fail/err, all explained (console FS/libc semantics, no `_testcapi`)** | n/a |
 | Payload embedding Python (`experiments/03-python-hello`) | yes (same launcher + script on macOS arm64 against the host build: 10/10 checks) | yes | yes (local + CI) | yes | **yes: 10/10, interpreter ready 0.019 s, ru_maxrss 43 MiB** | n/a |
 | Ren'Py C dependencies (`ports/ffmpeg`, `ports/build-all-deps.sh`) | n/a | yes (LGPL FFmpeg 7.1.5 with x86 asm, no patches; other libraries from pacbrew v0.40.3) | yes: `build/sysroot` static libraries; a link check of FFmpeg, FreeType, HarfBuzz, FriBidi, libpng, libjpeg, libwebp, SDL2_image, zlib/bz2/xz; Ren'Py `ffmedia.c`/`ftsupport.c` compile against them | n/a | not run (decode benchmark deferred to 06b) | n/a |
-| Ren'Py 8.5.3 native modules + launcher (`ports/renpy`) | yes: host twin (same generated C, inittab, launcher and runtime tree, built for macOS) runs the test game | yes: 60 modules, 72 sources, no source changes | yes: `ksre-ps5-renpy.elf` (local; CI step in ps5-cross-build) | — | — | n/a |
-| Ren'Py original test game (`fixtures/testgame`) | yes: unattended self-test 10/10 on the host twin (gl2, pixel read-back, ATL, audio, persistent, save, load, rollback, choice); official SDK reference run: pending | n/a | n/a | — | — | n/a |
+| Ren'Py 8.5.3 native modules + launcher (`ports/renpy`) | yes: host twin (same generated C, inittab, launcher and runtime tree, built for macOS) runs the test game | yes: 60 modules, 72 sources, no source changes | yes: `ksre-ps5-renpy.elf` (local + CI step in ps5-cross-build) | yes (websrv homebrew launcher) | **yes**: Ren'Py 8.5.3 starts and runs a game (450/450 imports, gl2 on OSMesa/llvmpipe); needs the launcher's no-spawn guard (a fork/exec powered the console off), `LD_LIBRARY_PATH` for `libOSMesa.so.8`, and ends with SIGKILL because `exit` is refused | n/a |
+| Ren'Py original test game (`fixtures/testgame`) | yes: unattended self-test 11/11 on the host twin (gl2, pixel read-back, ATL, audio, persistent, game menu, save, load, rollback, choice); official SDK reference run: pending | n/a | n/a | yes | **yes**: self-test 10/10 on the console (before the `gamemenu` check was added); interactive checklist with the pad confirmed by the maintainer (dialogue, choices, ATL, chime, save, load, rollback, persistent start count) | n/a |
 | KSRE v2.0.5 | — | — | — | — | — | — |
 | Launcher / packaging | — | — | — | — | — | — |
 
@@ -109,8 +109,19 @@ unchanged for the PS5 and registered through our own inittab; with this project'
 the static CPython and the 03c libraries they link into one payload. `renpy.gl2.assimp`
 (assimp) and `renpy.gl2.live2dmodel` (Live2D) are not built; a Python stub replaces the
 assimp module. The same build compiled for the Mac (host twin) runs an original test game's
-self-test with every check passing. Nothing has run on the console yet (04b). Details:
+self-test with every check passing. Details:
 [ports/renpy](../ports/renpy/README.md), [fixtures/testgame](../fixtures/testgame/README.md).
+
+## Milestone 04b (Ren'Py test game on the console) in short
+
+Ren'Py 8.5.3 runs the original test game on the PS5 (firmware 7.61): self-test 10/10 and the
+interactive checklist with the controller confirmed by the maintainer. Three console facts
+needed launcher changes: a child process (`platform.platform()` → `subprocess`) powered the
+whole console off, so all process spawning now raises `OSError`; the launcher's `chdir()` hid
+`libOSMesa.so.8` from the SDK linker, so `LD_LIBRARY_PATH` points at the payload directory;
+the `exit` system call is refused after a run, so the payload ends with `SIGKILL` after its
+end marker. ftpsrv does not fsync: files uploaded just before a console crash were damaged.
+The test game needed `layout.defaults()` for its menus and a visible focus style.
 
 ## Milestone 02c (controller, audio, storage) in short
 

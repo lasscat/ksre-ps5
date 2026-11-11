@@ -7,12 +7,16 @@ two PNG images, two WAV sounds). Generated files are never committed.
 
 * **Interactive path** (`script.rpy`, normal start): dialogue, a two-way choice with different
   marker motion, a chime, then instructions to save, load, roll back and restart (the start
-  count is persistent). This is the 04b console checklist.
+  count is persistent). This is the 04b console checklist. Menus are Ren'Py's built-in classic
+  layouts, switched on with `layout.defaults()` in `options.rpy` (without it the game menu does
+  nothing and there is no main menu), plus a gold focus bar so the pad's selection is visible.
+  Pad: Cross = advance/select, D-pad = move, Options or Circle = game menu (opens on Save),
+  L1 = roll back.
 * **Self-test** (`selftest.rpy`): set `KSRE_TESTGAME_SELFTEST=1`. The game skips the main
   menu, prints `TESTGAME PASS|FAIL|INFO name detail` lines, ends with
   `TESTGAME END pass=N fail=M ...` and quits with status 0 or 1. Checks: renderer is gl2/gles2
   with models, saves go to `RENPY_PATH_TO_SAVES`, persistent file written (`runs=` count
-  goes up per run), ATL runs over time, screenshot pixels match the background colours
+  goes up per run), a game menu screen exists (`gamemenu`), ATL runs over time, screenshot pixels match the background colours
   (GL draw + read-back), WAV playback position advances, both choice outcomes, save,
   load restores the store, rollback restores the store.
 

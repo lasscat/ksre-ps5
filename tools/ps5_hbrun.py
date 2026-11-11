@@ -8,7 +8,8 @@ websrv homebrew launcher instead, which runs them as a foreground application.
 This tool:
 
   1. uploads the ELF over FTP to /data/homebrew/<name>/eboot.elf (ftpsrv, default port 2121),
-     plus any --extra files (e.g. Mesa .so libraries) next to it,
+     plus any --extra files (e.g. Mesa .so libraries) next to it and any --tree
+     directories (recursive, unchanged sizes skipped; e.g. a runtime tree under /data/ksre-ps5),
   2. asks websrv (default port 8080) to run it: GET /hbldr?path=...&pipe=1,
   3. prints the streamed stdout/stderr and stops as soon as the payload prints its end
      marker (--until, default any "KSRE_PS5_<name>_END" line), or when the connection
@@ -41,7 +42,55 @@ def remote_size(ftp, path):
         return None
 
 
-def upload(host, port, name, payload, extras=(), force=False):
+TREE_SKIP = {"saves", "__MACOSX", ".DS_Store"}
+
+
+def mkdirs(ftp, path, made):
+    """Create every missing directory of an absolute remote path (errors mean 'exists')."""
+    cur = ""
+    for part in path.strip("/").split("/"):
+        cur += "/" + part
+        if cur not in made:
+            try:
+                ftp.mkd(cur)
+            except ftplib.error_perm:
+                pass
+            made.add(cur)
+
+
+def upload_tree(ftp, spec, force=False):
+    """Upload LOCAL_DIR recursively to REMOTE_DIR, skipping files whose size already matches.
+
+    Directories/files named in TREE_SKIP (e.g. a host run's saves/) are not uploaded.
+    """
+    local, sep, remote = spec.partition(":")
+    if not sep or not remote.startswith("/") or not os.path.isdir(local):
+        raise SystemExit("ps5_hbrun: --tree needs LOCAL_DIR:/ABS/REMOTE_DIR, got %r" % spec)
+    made = set()
+    sent = skipped = nbytes = 0
+    for root, dirs, files in os.walk(local):
+        dirs[:] = sorted(d for d in dirs if d not in TREE_SKIP)
+        rel = os.path.relpath(root, local)
+        rdir = remote.rstrip("/") + ("" if rel == "." else "/" + rel.replace(os.sep, "/"))
+        mkdirs(ftp, rdir, made)
+        for fn in sorted(files):
+            if fn in TREE_SKIP:
+                continue
+            lp = os.path.join(root, fn)
+            size = os.path.getsize(lp)
+            dest = rdir + "/" + fn
+            if not force and remote_size(ftp, dest) == size:
+                skipped += 1
+                continue
+            with open(lp, "rb") as f:
+                ftp.storbinary("STOR " + dest, f, blocksize=65536)
+            sent += 1
+            nbytes += size
+    print("ps5_hbrun: tree %s -> %s: %d uploaded (%d bytes), %d unchanged"
+          % (local, remote, sent, nbytes, skipped), file=sys.stderr)
+
+
+def upload(host, port, name, payload, extras=(), force=False, trees=()):
     """Upload the ELF (always) and extra files (skipped when the size matches).
 
     extras: iterable of "LOCAL[:REMOTE_NAME]" strings; REMOTE_NAME defaults to
@@ -71,6 +120,8 @@ def upload(host, port, name, payload, extras=(), force=False):
             print("ps5_hbrun: uploading %s -> %s (%d bytes)" % (local, dest, size), file=sys.stderr)
             with open(local, "rb") as f:
                 ftp.storbinary("STOR " + dest, f, blocksize=65536)
+        for spec in trees:
+            upload_tree(ftp, spec, force)
     return base + "/eboot.elf"
 
 
@@ -120,18 +171,26 @@ def main():
     ap.add_argument("--env", default="", help='space-separated VAR=value list for the payload, e.g. "MESA_DEBUG=1 EGL_LOG_LEVEL=debug"')
     ap.add_argument("--extra", action="append", default=[], metavar="LOCAL[:REMOTE]",
                     help="also upload this file next to eboot.elf (repeatable); skipped if the size already matches")
+    ap.add_argument("--tree", action="append", default=[], metavar="LOCAL_DIR:/REMOTE_DIR",
+                    help="upload a directory recursively (repeatable); files whose size matches are skipped")
     ap.add_argument("--reupload", action="store_true", help="upload --extra files even if the size matches")
     ap.add_argument("--log", help="also append received output to this file")
     ap.add_argument("--timeout", type=float, default=120, help="hard limit in seconds")
     ap.add_argument("--idle-timeout", type=float, default=90, help="stop if the payload prints nothing for this long")
     ap.add_argument("--until", default=r"KSRE_PS5_[A-Za-z0-9_]*_END", help="regex of the line that marks the end of the run")
     ap.add_argument("--no-upload", action="store_true", help="launch the ELF already on the console")
+    ap.add_argument("--upload-only", action="store_true",
+                    help="upload, do not launch (ftpsrv does not fsync: give the console ~35 s to write the data "
+                         "out before a run that may crash it)")
     a = ap.parse_args()
 
     path = "/data/homebrew/%s/eboot.elf" % a.name
     if not a.no_upload:
         print("ps5_hbrun: uploading %s -> %s" % (a.payload, path), file=sys.stderr)
-        upload(a.host, a.ftp_port, a.name, a.payload, a.extra, a.reupload)
+        upload(a.host, a.ftp_port, a.name, a.payload, a.extra, a.reupload, a.tree)
+    if a.upload_only:
+        print("ps5_hbrun: upload done, not launching (--upload-only)", file=sys.stderr)
+        return 0
 
     q = {"path": path, "pipe": "1", "cwd": "/data/homebrew/" + a.name}
     if a.args:

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 /*
- * ksre-ps5 Ren'Py launcher (milestone 04a).
+ * ksre-ps5 Ren'Py launcher (milestones 04a, 04b).
  *
  * Starts Ren'Py 8.5.3 on the static CPython 3.12.8 build: registers Ren'Py's built-in
  * native modules (librenpy.a, generated inittab), configures an isolated interpreter
@@ -24,7 +24,8 @@
  * (payload threads default to 64 KiB, main thread RLIMIT_STACK 2 MiB; macOS builds use the
  * main thread instead, because Cocoa only creates windows there), MXCSR FTZ/DAZ is
  * cleared on the threads started here, SystemExit is handled here instead of letting
- * CPython call exit(), and the process ends with flush + _exit() (R11). stdout and stderr
+ * CPython call exit(), and the process ends with flush + _exit() (R11; on the PS5 the exit
+ * system call is refused after a Ren'Py run, then SIGKILL, 04b). stdout and stderr
  * are copied to <root>/logs/launcher-last.log so a run leaves a log on the console even
  * when the loader's socket is gone. The last line is always `KSRE_PS5_RENPY_END rc=N`.
  * Builds for the host too (ports/renpy/build.sh host).
@@ -411,6 +412,28 @@ static int run_main_file(const char *path)
     return rc;
 }
 
+/*
+ * No child processes on the PS5: a fork/exec from a homebrew app took the whole console down
+ * (04b, console: the start-up probe's last events were the os.pipe/os.open that start
+ * subprocess.Popen, called from platform.platform() -> architecture() -> `file -b`). CPython's
+ * platform module and Ren'Py treat OSError from a spawn as "command not available", so every
+ * way of starting a process raises OSError(ENOSYS) instead. Also applied on the host twin.
+ */
+static const char no_spawn_py[] =
+    "def _ksre_install_no_spawn():\n"
+    "    import errno, os, subprocess\n"
+    "    def refuse(*args, **kwargs):\n"
+    "        raise OSError(errno.ENOSYS, 'starting processes is disabled on the PS5 (ksre-ps5 launcher)')\n"
+    "    subprocess._fork_exec = refuse\n"
+    "    subprocess._USE_POSIX_SPAWN = False\n"
+    "    for name in ('fork', 'forkpty', 'vfork', 'system', 'popen', 'posix_spawn', 'posix_spawnp',\n"
+    "                 'execv', 'execve', 'execl', 'execle', 'execlp', 'execlpe', 'execvp', 'execvpe',\n"
+    "                 'spawnv', 'spawnve', 'spawnl', 'spawnle', 'spawnlp', 'spawnlpe', 'spawnvp', 'spawnvpe'):\n"
+    "        if hasattr(os, name):\n"
+    "            setattr(os, name, refuse)\n"
+    "_ksre_install_no_spawn()\n"
+    "del _ksre_install_no_spawn\n";
+
 static int run_python(struct job *job)
 {
     PyStatus st;
@@ -465,6 +488,11 @@ static int run_python(struct job *job)
     if (status_failed(st, "Py_InitializeFromConfig"))
         return PyStatus_IsExit(st) ? st.exitcode : 122;
     printf("RENPY step python-ready t=%.3fs init=%.3fs\n", mono_now() - g_t0, mono_now() - t_init);
+    if (PyRun_SimpleString(no_spawn_py) != 0) {
+        printf("RENPY FATAL cannot install the no-spawn guard\n");
+        return 123;
+    }
+    printf("RENPY step no-spawn guard installed (subprocess/os spawn -> OSError ENOSYS)\n");
     printf("RENPY step run %s %s\n", script, job->game);
 
     int rc = run_main_file(script);
@@ -543,12 +571,27 @@ _Noreturn static void finish(int rc)
 {
     printf("RENPY step end t=%.3fs\n", mono_now() - g_t0);
     stop_tee();
-    char end[64];
-    int n = snprintf(end, sizeof end, "KSRE_PS5_RENPY_END rc=%d\n", rc);
+    /* 04b console: something on this path raised SIGSYS after the end marker. With SIGSYS
+     * ignored, a system call the console refuses fails with ENOSYS instead. */
+    signal(SIGSYS, SIG_IGN);
+    char end[96];
+    int n;
+    if (g_log_fd >= 0 && fsync(g_log_fd) != 0) {
+        n = snprintf(end, sizeof end, "RENPY WARN fsync(log): %s\n", strerror(errno));
+        raw_out(end, (size_t)n);
+    }
+    n = snprintf(end, sizeof end, "KSRE_PS5_RENPY_END rc=%d\n", rc);
     raw_out(end, (size_t)n);
-    if (g_log_fd >= 0)
-        fsync(g_log_fd);
-    _exit(rc);
+    /* 04b console: after a Ren'Py run the exit system call is refused (SIGSYS; with SIGSYS
+     * ignored, _exit returns). Call it through a pointer the compiler cannot treat as
+     * noreturn, then fall back to SIGKILL. */
+    void (*volatile exit_fn)(int) = (void (*)(int))_exit;
+    exit_fn(rc);
+    static const char killmsg[] = "RENPY WARN _exit refused; ending with SIGKILL\n";
+    raw_out(killmsg, sizeof killmsg - 1);
+    kill(getpid(), SIGKILL);
+    for (;;)
+        pause();
 }
 
 /* With --main-thread, the limits are enforced from this thread. */
@@ -714,6 +757,12 @@ int main(int argc, char **argv)
     set_default_env("TMPDIR", buf);
     /* SDL hints read from the environment (SDL_hints.h names without the HINT_ part). */
     set_default_env("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1");
+    /* The SDK's run-time linker finds dlopen()ed libraries (libOSMesa.so.8 next to eboot.elf)
+     * in the current directory as a last resort, and we chdir() below. Point LD_LIBRARY_PATH
+     * at the start directory instead. One directory only: the SDK's rtld does not split ':'
+     * lists (04b, source: crt/rtld.c). */
+    if (getcwd(buf, sizeof buf))
+        set_default_env("LD_LIBRARY_PATH", buf);
 
     check_imports();
     if (chdir(job.renpy_base) != 0)

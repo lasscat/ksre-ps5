@@ -7,7 +7,7 @@
 # and ftpsrv (2121) running on the console; see tools/fetch-websrv.sh.
 #
 # Usage: tools/deploy-hb.sh NAME PAYLOAD.elf [--timeout SECONDS] [--args "..."] [--env "A=b C=d"]
-#                           [--extra LOCAL[:REMOTE]]... [--reupload] [--no-upload]
+#                           [--extra LOCAL[:REMOTE]]... [--tree LOCAL_DIR:/REMOTE_DIR]... [--reupload] [--no-upload] [--upload-only]
 #                           [--idle-timeout SECONDS] [--until REGEX]
 # Stops by itself at the payload's KSRE_PS5_*_END line, on EOF, after --idle-timeout seconds
 # without output (default 90), or at --timeout (default 120).

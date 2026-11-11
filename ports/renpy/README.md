@@ -65,6 +65,59 @@ directory as its argument. Console layout under `--root` (default `/data/ksre-ps
 * `--max-seconds N` stops the payload after N s; `Py_FinalizeEx` gets 10 s. The last line is
   always `KSRE_PS5_RENPY_END rc=N`; exit through `_exit()`.
 * No arguments (loaders pass none): arguments are read from `<root>/renpy-args.txt`.
+* No child processes: before `renpy.py` runs, `subprocess` and every `os` spawn/exec function
+  raise `OSError(ENOSYS)` (see 04b below). Also on the host twin.
+* `LD_LIBRARY_PATH` defaults to the start directory (where the homebrew launcher put
+  `eboot.elf` and `libOSMesa.so.8`), because the launcher `chdir()`s to the Ren'Py base.
+* Exit: the PS5 refuses the `exit` system call after a Ren'Py run (SIGSYS). `finish()` ignores
+  SIGSYS, prints the end marker, tries `_exit` and then ends with `SIGKILL`
+  (`RENPY WARN _exit refused; ending with SIGKILL`).
+
+`probe/renpy.py` is a start-up tracer for crashes before Ren'Py's first log line: with
+`--renpy-base <dir of probe>` the launcher runs it instead of `renpy.py`; it runs the real
+`renpy.py` and prints every first import, Ren'Py call and C call as a `PROBE` line, pausing
+4 ms after each so the line leaves the console before the next step.
+
+## Console run (04b)
+
+```sh
+B=build/ports/renpy
+tools/deploy-hb.sh ksre-renpy $B/ksre-ps5-renpy.elf --upload-only \
+  --extra external/toolchains/pacbrew-v0.40.3/user/homebrew/lib/libOSMesa.so.8 \
+  --tree build/cpython/ps5/python-home/lib:/data/ksre-ps5/python/lib \
+  --tree $B/runtime/renpy:/data/ksre-ps5/renpy --tree $B/testgame:/data/ksre-ps5/testgame
+# wait ~35 s (see ftpsrv below), then:
+tools/deploy-hb.sh ksre-renpy $B/ksre-ps5-renpy.elf --no-upload \
+  --env "KSRE_TESTGAME_SELFTEST=1 RENPY_LOG_TO_STDOUT=1" --args="--max-seconds 150" \
+  --timeout 170 --idle-timeout 45
+```
+
+`RENPY_LOG_TO_STDOUT=1` streams Ren'Py's `log.txt` lines through the loader socket. Leave out
+`KSRE_TESTGAME_SELFTEST=1` for the interactive game (`--max-seconds 600`, `--idle-timeout 620`).
+
+Findings (console unless marked):
+
+* **A `fork`/`exec` from the homebrew app takes the whole PS5 down** (black screen, console
+  powered off; twice). Ren'Py 8.5.3 calls `platform.platform()` while importing
+  `renpy.exports` (and in `log.py`); on FreeBSD CPython 3.12 runs `file -b <executable>` and
+  `uname -p` through `subprocess` there. The probe's last events were the `os.pipe`/`os.open`
+  that start `subprocess.Popen`; with the launcher's no-spawn guard the same start-up runs
+  through (cause: console + inference; the `fork_exec` call itself was never seen).
+* **ftpsrv does not fsync**: after those power-offs `renpy.py` and `script.rpyc` were 0 bytes
+  and `python312.zip` had lost its last 4 bytes, so size-based skipping cannot be trusted after
+  a crash. Re-upload with `--reupload` and give the console ~35 s (FreeBSD syncer delay,
+  inference) before a run that may crash it; `--upload-only` / `--no-upload` split the steps.
+* The SDK run-time linker searches the current directory last and splits `LD_LIBRARY_PATH`
+  wrongly (it tests `path[off]` for `:`), so only a single directory works (source:
+  `crt/rtld.c`). Without it: `Could not get pygame screen: error('libOSMesa.so.8:
+  error_code=0xffffffff')` and Ren'Py falls back to `sw`, which also fails.
+* All 450 imports resolve (`missing=0`, R17 closed); Python on the 16 MiB thread opens the SDL
+  window and GL context (R16 closed: `--main-thread` not needed).
+* Context: llvmpipe (LLVM 14.0.6, 256 bits), GL 4.5 compatibility, Mesa 22.1.7; Ren'Py reports
+  max texture 4096. One `GL_INVALID_OPERATION in glUnmapBuffer(buffer is not mapped)` per start
+  (harmless so far). Steam init fails without `_ctypes` (expected, ignored by Ren'Py).
+* The window opens at 1739×978 inside the 1920×1080 display ("Windowed mode") unless the
+  game or the player chooses full screen.
 
 ## Results
 
@@ -72,3 +125,6 @@ directory as its argument. Console layout under `--root` (default `/data/ksre-ps
 |---|---|---|---|---|---|---|
 | 2026-11-10 | `librenpy.a` + payload, macOS arm64, LLVM 18.1.8, SDK v0.45 | — | yes: 72 sources, 9 warnings (all in upstream code) | yes: ELF64 x86-64 PIE, 74 MB unstripped, NEEDED = 03 payload's + SDL's Sce* modules | — | — |
 | 2026-11-10 | host twin (same generated C, inittab, launcher, runtime tree; brew FFmpeg 9.0/SDL2-compat, FriBidi 1.0.15 from source) running `fixtures/testgame` self-test | yes: 10/10 (gl2, pixel read-back, ATL, audio, persistent 1→2 across runs, save, load, rollback, choice); interpreter ready 0.007 s, test 2.8 s | n/a | n/a | n/a | n/a |
+| 2026-11-11 | console fw 7.61, websrv homebrew launcher, runtime tree + stdlib zip under `/data/ksre-ps5`, `libOSMesa.so.8` next to `eboot.elf` (before the fixes) | — | — | — | yes | **FAIL**: twice the whole console went black and powered off right after `renpy.py` started (fork/exec, see findings) |
+| 2026-11-11 | console, launcher with no-spawn guard + `LD_LIBRARY_PATH` + exit fallback; test game self-test | yes: 11/11 (with `gamemenu`) | n/a | n/a | yes | **yes: 10/10** (gl2 on llvmpipe, savedir, persistent runs 1→2→3 across runs, ATL, pixel read-back, WAV position, choices, save, load, rollback), test 6.1 s, Python ready 0.08 s; ends `rc=0` then `_exit refused; SIGKILL` |
+| 2026-11-11 | console, interactive test game with the controller (maintainer) | n/a | n/a | n/a | yes | **yes**: maintainer confirmed the checklist ("everything works": dialogue, both choices (spin/slide), ATL, chime, save, load, rollback); persistence across restarts from the console's persistent file (`ksre_starts` = 7 after 7 starts over several launches and power cycles); game menu needed `layout.defaults()` and a focus style (test-game fixes); Quit ends with `rc=0` |

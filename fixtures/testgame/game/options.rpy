@@ -11,3 +11,24 @@ define config.screen_height = 1080
 define config.window_title = "ksre-ps5 test game"
 define config.has_autosave = False
 define config.check_conflicting_properties = True
+
+# Ren'Py's built-in classic layouts: main menu, game menu (save, load, preferences) and the
+# yes/no prompt. Normally gui.init() or a theme calls this; this game has neither, and
+# without it the game menu does nothing (04b console: Options/Circle opened no menu).
+init python:
+    layout.defaults()
+
+# Start full screen (the console display is 1920x1080; windowed mode gave 1739x978).
+define config.default_fullscreen = True
+
+# Without a theme the built-in buttons draw no focus, so with a controller nobody can see
+# which entry is selected (04b console). Focused entries get a gold bar and gold text;
+# selected ones (e.g. the active preference) blue text. large_button (save/load slots) and
+# menu_choice_button (in-game choices) do not inherit from button, so all three are set.
+init python:
+    for _s in ("button", "large_button", "menu_choice_button"):
+        getattr(style, _s).hover_background = Solid("#ffd04070")
+    for _s in ("button_text", "large_button_text", "menu_choice"):
+        getattr(style, _s).hover_color = "#ffd040"
+        getattr(style, _s).selected_color = "#80c0ff"
+    del _s
