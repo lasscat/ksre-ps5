@@ -4,7 +4,7 @@ KSRE's own files stay unmodified. This directory adds:
 
 | File | Purpose |
 |---|---|
-| `zz_ksre_ps5.rpy` | Platform overlay (GPL-3.0-or-later), copied into `game/`: replaces KSRE's Discord Rich Presence thread (`rpc`) before `init 999` starts it, makes self-voicing TTS spawn nothing (`config.tts_function`), starts in full screen (`config.default_fullscreen`) |
+| `zz_ksre_ps5.rpy` | Platform overlay (GPL-3.0-or-later), copied into `game/`: replaces KSRE's Discord Rich Presence thread (`rpc`) before `init 999` starts it, makes self-voicing TTS spawn nothing (`config.tts_function`), starts in full screen (`config.default_fullscreen`), draws no KSRE mouse cursor (`config.mouse_displayable = None`; there is no mouse) |
 | `stage.sh` | Copies the maintainer's `game/` (docs/GAME_DATA.md) to `build/ports/ksre/stage/game`, adds the overlay and `script_version.txt`, compiles `.rpyc` + `cache/` on the host twin |
 | `debug/zz_ksre_ps5_shots.rpy` | Debug only, never staged: with `KSRE_PS5_SHOTS=DIR`, periodic screenshots + one of the main menu (colour comparison with the host twin) |
 
@@ -44,3 +44,6 @@ tools/deploy-hb.sh ksre-renpy $B/ksre-ps5-renpy.elf --no-upload --env "RENPY_LOG
 | 2026-11-11 | console, `KSRE_PS5_MEMLOG=1` | n/a | cause: the app has **448 MiB flexible memory**; CPython's mmap()ed object arenas used it all (0 MiB at 6 s) while malloc (direct memory) kept going to 800 MB RSS |
 | 2026-11-11 | console run 3, launcher arenas via malloc | n/a | **yes**: script load 6.9 s, gl2/llvmpipe full screen 1920×1080, 4LS splash video, main menu, new game, first scenes, opening video **with sound** (maintainer), saves work; flexible memory steady at 117–124 MiB free, RSS 1.6 GB; very slow transitions/text/animations (software GL, 06b); ended by `--max-seconds` |
 | 2026-11-11 | console screenshots vs host twin (main menu) | reference | colours match: mean RGB of the paper area 253.5/232.1/186.8 vs 253.5/232.0/186.8; intro video frames look right |
+| 2026-11-11 | 06a: pad-only navigation, 122 s run (`KSRE_PS5_MEMLOG=30`) | n/a | **yes** (maintainer, controller only): main menu, Options (sliders, toggles), Accessibility, Saves/Load (scrolling), Extras (Jukebox, Gallery, Library, Cinema), Mods, new game, in-game menu (Save, History, Skip, Auto, Return), a choice, back to main menu: all reachable and usable; no traceback in the log; flexible memory steady at 123 MiB free |
+
+Navigation (06a): Ren'Py's default `config.pad_bindings` are enough (D-pad/left stick focus and sliders, ✕ select, ○ and Options back/menu). KSRE has no text input, so no on-screen keyboard is needed. The Options screen still shows the "Discord activity" and "Hardware cursor" toggles; they have no effect on the PS5.

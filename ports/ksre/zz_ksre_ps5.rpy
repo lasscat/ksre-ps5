@@ -36,3 +36,10 @@ define config.tts_function = _ksre_ps5_tts
 
 # The console has one display; start in full screen (players can still change it).
 define config.default_fullscreen = True
+
+# 06a: the console has no mouse. KSRE draws its own cursor (config.mouse_displayable) at the
+# last mouse position, i.e. stuck in the top-left corner; draw none. Also keeps the "Hardware
+# cursor" toggle in Options from bringing it back.
+init 998 python:
+    mouse = Null()
+    config.mouse_displayable = None
