@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-11-11 (milestone 04b). Statuses are deliberately separate: compiling is
+Last updated: 2026-11-11 (milestone 05). Statuses are deliberately separate: compiling is
 not loading, loading is not running, running a test is not playing the game.
 
 | Status | Meaning |
@@ -27,7 +27,7 @@ not loading, loading is not running, running a test is not playing the game.
 | Ren'Py C dependencies (`ports/ffmpeg`, `ports/build-all-deps.sh`) | n/a | yes (LGPL FFmpeg 7.1.5 with x86 asm, no patches; other libraries from pacbrew v0.40.3) | yes: `build/sysroot` static libraries; a link check of FFmpeg, FreeType, HarfBuzz, FriBidi, libpng, libjpeg, libwebp, SDL2_image, zlib/bz2/xz; Ren'Py `ffmedia.c`/`ftsupport.c` compile against them | n/a | not run (decode benchmark deferred to 06b) | n/a |
 | Ren'Py 8.5.3 native modules + launcher (`ports/renpy`) | yes: host twin (same generated C, inittab, launcher and runtime tree, built for macOS) runs the test game | yes: 60 modules, 72 sources, no source changes | yes: `ksre-ps5-renpy.elf` (local + CI step in ps5-cross-build) | yes (websrv homebrew launcher) | **yes**: Ren'Py 8.5.3 starts and runs a game (450/450 imports, gl2 on OSMesa/llvmpipe); needs the launcher's no-spawn guard (a fork/exec powered the console off), `LD_LIBRARY_PATH` for `libOSMesa.so.8`, and ends with SIGKILL because `exit` is refused | n/a |
 | Ren'Py original test game (`fixtures/testgame`) | yes: unattended self-test 11/11 on the host twin (gl2, pixel read-back, ATL, audio, persistent, game menu, save, load, rollback, choice); official SDK reference run: pending | n/a | n/a | yes | **yes**: self-test 10/10 on the console (before the `gamemenu` check was added); interactive checklist with the pad confirmed by the maintainer (dialogue, choices, ATL, chime, save, load, rollback, persistent start count) | n/a |
-| KSRE v2.0.5 | — | — | — | — | — | — |
+| KSRE v2.0.5 (`ports/ksre`) | yes: `.rpyc` compiled on the host twin, game starts full screen | n/a | n/a | yes | **partial (05)**: title screen, new game, first scenes and the opening video with sound (maintainer + log); colours match the host; saves work; very slow transitions/text animation on software GL (06b) | — |
 | Launcher / packaging | — | — | — | — | — | — |
 
 "CI" means the GitHub Actions job `ps5-cross-build` performs the step; check
@@ -122,6 +122,16 @@ whole console off, so all process spawning now raises `OSError`; the launcher's 
 the `exit` system call is refused after a run, so the payload ends with `SIGKILL` after its
 end marker. ftpsrv does not fsync: files uploaded just before a console crash were damaged.
 The test game needed `layout.defaults()` for its menus and a visible focus style.
+
+## Milestone 05 (KSRE title screen and opening) in short
+
+KSRE v2.0.5, unmodified plus this project's overlay (`ports/ksre`), runs on the console:
+4LS splash video, title screen, new game, the first scenes and the opening video with sound
+(maintainer confirmation + captured logs); main-menu colours match the host twin. The first
+run failed because the app has only 448 MiB of flexible memory and CPython's mmap()ed object
+arenas used it up; the launcher now backs them with malloc. Everything is very slow on the
+software GL path (transitions, text, animations); performance is milestone 06b. Details:
+[ports/ksre](../ports/ksre/README.md).
 
 ## Milestone 02c (controller, audio, storage) in short
 

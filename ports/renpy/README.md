@@ -69,6 +69,11 @@ directory as its argument. Console layout under `--root` (default `/data/ksre-ps
   raise `OSError(ENOSYS)` (see 04b below). Also on the host twin.
 * `LD_LIBRARY_PATH` defaults to the start directory (where the homebrew launcher put
   `eboot.elf` and `libOSMesa.so.8`), because the launcher `chdir()`s to the Ren'Py base.
+* Memory (05): CPython's object arenas come from `malloc` (`PyObject_SetArenaAllocator`), not
+  `mmap`. The app gets only 448 MiB of flexible memory (mmap, thread stacks, JIT code); malloc
+  uses direct memory. With mmap()ed arenas KSRE's scripts used up the flexible pool and no
+  thread could start. `KSRE_PS5_MEMLOG=N` prints `RENPY mem` (maxrss, flexible available /
+  configured, direct size) every N s; it never allocates.
 * Exit: the PS5 refuses the `exit` system call after a Ren'Py run (SIGSYS). `finish()` ignores
   SIGSYS, prints the end marker, tries `_exit` and then ends with `SIGKILL`
   (`RENPY WARN _exit refused; ending with SIGKILL`).
@@ -127,4 +132,5 @@ Findings (console unless marked):
 | 2026-11-10 | host twin (same generated C, inittab, launcher, runtime tree; brew FFmpeg 9.0/SDL2-compat, FriBidi 1.0.15 from source) running `fixtures/testgame` self-test | yes: 10/10 (gl2, pixel read-back, ATL, audio, persistent 1→2 across runs, save, load, rollback, choice); interpreter ready 0.007 s, test 2.8 s | n/a | n/a | n/a | n/a |
 | 2026-11-11 | console fw 7.61, websrv homebrew launcher, runtime tree + stdlib zip under `/data/ksre-ps5`, `libOSMesa.so.8` next to `eboot.elf` (before the fixes) | — | — | — | yes | **FAIL**: twice the whole console went black and powered off right after `renpy.py` started (fork/exec, see findings) |
 | 2026-11-11 | console, launcher with no-spawn guard + `LD_LIBRARY_PATH` + exit fallback; test game self-test | yes: 11/11 (with `gamemenu`) | n/a | n/a | yes | **yes: 10/10** (gl2 on llvmpipe, savedir, persistent runs 1→2→3 across runs, ATL, pixel read-back, WAV position, choices, save, load, rollback), test 6.1 s, Python ready 0.08 s; ends `rc=0` then `_exit refused; SIGKILL` |
+| 2026-11-11 | console, KSRE v2.0.5 with arenas via malloc (see ports/ksre) | yes: test game self-test passes | n/a | n/a | yes | **yes**: title screen, new game, first scenes, opening video (ports/ksre/README.md) |
 | 2026-11-11 | console, interactive test game with the controller (maintainer) | n/a | n/a | n/a | yes | **yes**: maintainer confirmed the checklist ("everything works": dialogue, both choices (spin/slide), ATL, chime, save, load, rollback); persistence across restarts from the console's persistent file (`ksre_starts` = 7 after 7 starts over several launches and power cycles); game menu needed `layout.defaults()` and a focus style (test-game fixes); Quit ends with `rc=0` |

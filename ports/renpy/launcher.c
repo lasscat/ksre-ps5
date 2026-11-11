@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -94,6 +95,51 @@ static int g_err_fd = 2;
 static int g_log_fd = -1;
 static pthread_t g_tee;
 static int g_tee_on;
+
+static double mono_now(void);
+
+/* Memory report (05): KSRE ran out of memory on the console. KSRE_PS5_MEMLOG=N prints one
+ * line every N seconds; the PS5 values come from libkernel and never allocate anything. */
+#if defined(__FreeBSD__) && !defined(__APPLE__)
+int sceKernelAvailableFlexibleMemorySize(size_t *size);
+int sceKernelConfiguredFlexibleMemorySize(size_t *size);
+size_t sceKernelGetDirectMemorySize(void);
+#endif
+static double g_memlog;
+
+static void report_mem(const char *tag)
+{
+    struct rusage ru;
+    long maxrss = getrusage(RUSAGE_SELF, &ru) == 0 ? (long)ru.ru_maxrss : -1;
+#if defined(__APPLE__)
+    maxrss /= 1024; /* bytes on macOS, KiB elsewhere */
+#endif
+#if defined(__FreeBSD__) && !defined(__APPLE__)
+    size_t avail = 0, conf = 0;
+    int ra = sceKernelAvailableFlexibleMemorySize(&avail);
+    int rc = sceKernelConfiguredFlexibleMemorySize(&conf);
+    printf("RENPY mem %s t=%.1fs maxrss=%ldKiB flexible_avail=%zuMiB (rc=%#x) flexible_conf=%zuMiB "
+           "(rc=%#x) direct=%zuMiB\n",
+           tag, mono_now() - g_t0, maxrss, avail >> 20, (unsigned)ra, conf >> 20, (unsigned)rc,
+           sceKernelGetDirectMemorySize() >> 20);
+#else
+    printf("RENPY mem %s t=%.1fs maxrss=%ldKiB\n", tag, mono_now() - g_t0, maxrss);
+#endif
+    fflush(stdout);
+}
+
+static void *arena_alloc(void *ctx, size_t size)
+{
+    (void)ctx;
+    return malloc(size);
+}
+
+static void arena_free(void *ctx, void *ptr, size_t size)
+{
+    (void)ctx;
+    (void)size;
+    free(ptr);
+}
 
 static double mono_now(void)
 {
@@ -448,6 +494,11 @@ static int run_python(struct job *job)
         return 120;
     }
     printf("RENPY step inittab modules=%d\n", ksre_renpy_module_count);
+    /* 05 console: the app gets only 448 MiB of flexible memory (mmap, thread stacks), while
+     * malloc draws from a larger pool. CPython's object arenas are mmap()ed by default and
+     * used it all up while KSRE's scripts loaded; then no thread could start. */
+    static PyObjectArenaAllocator arenas = {NULL, arena_alloc, arena_free};
+    PyObject_SetArenaAllocator(&arenas);
 
     char script[MAX_PATH_LEN];
     snprintf(script, sizeof script, "%s/renpy.py", job->renpy_base);
@@ -526,10 +577,14 @@ static void *py_thread(void *arg)
 static int wait_for_python(const struct job *job)
 {
     pthread_mutex_lock(&g_mu);
-    double finalize_start = 0;
+    double finalize_start = 0, next_mem = g_memlog > 0 ? mono_now() : 0;
     int rc = 0;
     while (g_state != FINISHED) {
         double now = mono_now(), deadline = 0;
+        if (next_mem > 0 && now >= next_mem) {
+            report_mem("tick");
+            next_mem = now + g_memlog;
+        }
         if (g_state == FINALIZING) {
             if (finalize_start == 0)
                 finalize_start = now;
@@ -537,6 +592,8 @@ static int wait_for_python(const struct job *job)
         }
         if (job->max_seconds > 0 && (deadline == 0 || g_t0 + job->max_seconds < deadline))
             deadline = g_t0 + job->max_seconds;
+        if (deadline == 0 && next_mem > 0)
+            deadline = now + 3600.0; /* timed waits so the memory report keeps running */
         if (deadline == 0) {
             pthread_cond_wait(&g_cv, &g_mu);
             continue;
@@ -765,6 +822,9 @@ int main(int argc, char **argv)
         set_default_env("LD_LIBRARY_PATH", buf);
 
     check_imports();
+    if (getenv("KSRE_PS5_MEMLOG"))
+        g_memlog = atof(getenv("KSRE_PS5_MEMLOG"));
+    report_mem("start");
     if (chdir(job.renpy_base) != 0)
         printf("RENPY WARN chdir(%s): %s\n", job.renpy_base, strerror(errno));
 
@@ -795,5 +855,6 @@ int main(int argc, char **argv)
         pthread_join(tid, NULL);
         rc = job.rc;
     }
+    report_mem("end");
     finish(rc);
 }

@@ -33,7 +33,7 @@ jobs:
       - name: Publication check (all history, including author e-mails)
         run: python3 tools/publication_check.py --all-history
       - name: Shell script lint
-        run: shellcheck -x tools/*.sh tools/lib/common.sh experiments/01-runtime-probe/link-inventory.sh experiments/02a-sdl-display/tools/fetch-font.sh ports/cpython/build.sh ports/build-all-deps.sh ports/ffmpeg/build.sh ports/renpy/build.sh
+        run: shellcheck -x tools/*.sh tools/lib/common.sh experiments/01-runtime-probe/link-inventory.sh experiments/02a-sdl-display/tools/fetch-font.sh ports/cpython/build.sh ports/build-all-deps.sh ports/ffmpeg/build.sh ports/renpy/build.sh ports/ksre/stage.sh
 
   host-probe:
     # Logic test of the probe on ordinary hosts. Not evidence about the PS5.

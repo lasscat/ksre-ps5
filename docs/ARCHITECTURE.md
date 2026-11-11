@@ -246,6 +246,14 @@ detection falls through to `renpy.linux = True`, which would:
 The overlay is a separate `.rpy` file shipped by this project; KSRE's own
 files stay unmodified wherever possible.
 
+Decided in milestone 5 (console): overlay `ports/ksre/zz_ksre_ps5.rpy`; `.rpyc` compiled on
+the host twin and uploaded with the game to `/data/ksre-ps5/ksre/game`; `script_version.txt`
+added like Ren'Py's distribution build (developer mode off). Memory: the homebrew app has
+**448 MiB of flexible memory** (mmap, thread stacks, JIT code) and ~12 GiB direct memory
+behind `malloc`; the launcher therefore gives CPython malloc-backed object arenas. Do not
+probe memory by allocating to the limit: touching ~2 GiB in one run froze the console
+(black screen, manual power cycle).
+
 ## Open blockers and the smallest experiment for each
 
 | # | Blocker | Smallest resolving experiment | Milestone |
