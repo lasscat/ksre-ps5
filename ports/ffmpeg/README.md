@@ -29,7 +29,7 @@ is GPL with x264/OpenSSL and is not used).
 | `libavcodec.a` VP9 symbols | 1052 |
 | `external/renpy/src/ffmedia.c` and `ftsupport.c` compile against `build/sysroot` | compiles (deprecation warnings only) |
 | `ports/deps-link-check.c` links against every dependency into an ELF | links |
-| Decode benchmark (synthetic VP9 1080p30) on the console | not run (optional; left for 06b) |
+| KSRE VP9 1080p30 + Opus through Ren'Py on the console (06b) | full-screen videos 28.4–30.0 decoded frames/s with `threads=auto` = 16; see ports/ksre |
 
 Open risk: FFmpeg decoder threads are plain pthreads; threads on the console start with
 MXCSR FTZ/DAZ set (03b). Not yet observed to matter; clear MXCSR in a thread-start hook if a

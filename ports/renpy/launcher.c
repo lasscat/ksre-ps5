@@ -44,6 +44,8 @@
 #include <string.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/sysctl.h>
+#include <libavutil/cpu.h>
 #include <time.h>
 #include <unistd.h>
 #if defined(__x86_64__)
@@ -358,6 +360,17 @@ static char *read_file(const char *path)
     if (buf)
         buf[len] = '\0';
     return buf;
+}
+
+/* 06b: how many threads FFmpeg's "threads=auto" (Ren'Py ffmedia.c) and llvmpipe will pick. */
+static void report_cpus(void)
+{
+    int ncpu = 0;
+    size_t len = sizeof ncpu;
+    int mib[2] = {CTL_HW, HW_NCPU};
+    int rs = sysctl(mib, 2, &ncpu, &len, NULL, 0);
+    printf("RENPY cpus sysconf_onln=%ld sysctl_hw_ncpu=%d (rc=%d) av_cpu_count=%d\n",
+           sysconf(_SC_NPROCESSORS_ONLN), ncpu, rs, av_cpu_count());
 }
 
 static void set_default_env(const char *key, const char *value)
@@ -814,6 +827,10 @@ int main(int argc, char **argv)
     set_default_env("TMPDIR", buf);
     /* SDL hints read from the environment (SDL_hints.h names without the HINT_ part). */
     set_default_env("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1");
+    /* 06b (console): the PS5 SDL/OSMesa flip already paces frames to the 60 Hz vblank (frame
+     * intervals stay multiples of 16.7 ms with swap interval 0). With Ren'Py's swap interval 1
+     * VP9 1080p30 videos fell to 19-25 fps; with 0 they hold 29-30 fps. */
+    set_default_env("RENPY_GL_VSYNC", "0");
     /* The SDK's run-time linker finds dlopen()ed libraries (libOSMesa.so.8 next to eboot.elf)
      * in the current directory as a last resort, and we chdir() below. Point LD_LIBRARY_PATH
      * at the start directory instead. One directory only: the SDK's rtld does not split ':'
@@ -822,6 +839,7 @@ int main(int argc, char **argv)
         set_default_env("LD_LIBRARY_PATH", buf);
 
     check_imports();
+    report_cpus();
     if (getenv("KSRE_PS5_MEMLOG"))
         g_memlog = atof(getenv("KSRE_PS5_MEMLOG"));
     report_mem("start");

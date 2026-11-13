@@ -182,6 +182,11 @@ firmware.
 * The output surface is a CPU copy into the VideoOut framebuffer on every swap
   (about 7–14 ms of the frame in the tables above).
 * Exit must go through `_exit()` (above); the screen after exit is unverified.
+* Real KSRE frames (06b, console): one full-screen background ~33 ms, dissolve ~50 ms
+  (18–19 fps), ImageDissolve wipes ~67 ms (14 fps), text at 40 cps ~50 ms (19–21 fps);
+  Python's share is under 1 ms. Frame intervals are multiples of 16.7 ms even with swap
+  interval 0. `LP_NUM_THREADS=8` is slower than the default 16; textures without mipmaps
+  are no faster. Details: [ports/ksre](../ports/ksre/README.md#performance-06b).
 * websrv and ftpsrv are unauthenticated: LAN-only, development use.
 
 ## Proposed upstream issues (not filed; the maintainer decides)

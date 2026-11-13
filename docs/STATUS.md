@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-11-11 (milestone 06a). Statuses are deliberately separate: compiling is
+Last updated: 2026-11-13 (milestone 06b). Statuses are deliberately separate: compiling is
 not loading, loading is not running, running a test is not playing the game.
 
 | Status | Meaning |
@@ -27,7 +27,7 @@ not loading, loading is not running, running a test is not playing the game.
 | Ren'Py C dependencies (`ports/ffmpeg`, `ports/build-all-deps.sh`) | n/a | yes (LGPL FFmpeg 7.1.5 with x86 asm, no patches; other libraries from pacbrew v0.40.3) | yes: `build/sysroot` static libraries; a link check of FFmpeg, FreeType, HarfBuzz, FriBidi, libpng, libjpeg, libwebp, SDL2_image, zlib/bz2/xz; Ren'Py `ffmedia.c`/`ftsupport.c` compile against them | n/a | not run (decode benchmark deferred to 06b) | n/a |
 | Ren'Py 8.5.3 native modules + launcher (`ports/renpy`) | yes: host twin (same generated C, inittab, launcher and runtime tree, built for macOS) runs the test game | yes: 60 modules, 72 sources, no source changes | yes: `ksre-ps5-renpy.elf` (local + CI step in ps5-cross-build) | yes (websrv homebrew launcher) | **yes**: Ren'Py 8.5.3 starts and runs a game (450/450 imports, gl2 on OSMesa/llvmpipe); needs the launcher's no-spawn guard (a fork/exec powered the console off), `LD_LIBRARY_PATH` for `libOSMesa.so.8`, and ends with SIGKILL because `exit` is refused | n/a |
 | Ren'Py original test game (`fixtures/testgame`) | yes: unattended self-test 11/11 on the host twin (gl2, pixel read-back, ATL, audio, persistent, game menu, save, load, rollback, choice); official SDK reference run: pending | n/a | n/a | yes | **yes**: self-test 10/10 on the console (before the `gamemenu` check was added); interactive checklist with the pad confirmed by the maintainer (dialogue, choices, ATL, chime, save, load, rollback, persistent start count) | n/a |
-| KSRE v2.0.5 (`ports/ksre`) | yes: `.rpyc` compiled on the host twin, game starts full screen | n/a | n/a | yes | **partial (05)**: title screen, new game, first scenes and the opening video with sound (maintainer + log); colours match the host; saves work; very slow transitions/text animation on software GL (06b); **06a: every menu/settings screen and the in-game menu navigated with the pad only (maintainer + log)** | — |
+| KSRE v2.0.5 (`ports/ksre`) | yes: `.rpyc` compiled on the host twin, game starts full screen | n/a | n/a | yes | **partial (05)**: title screen, new game, first scenes and the opening video with sound (maintainer + log); colours match the host; saves work; very slow transitions/text animation on software GL (06b); **06a: every menu/settings screen and the in-game menu navigated with the pad only (maintainer + log)**; **06b: full-screen videos 28–30 fps, credits video 20 fps, dissolves 16–19 fps, wipes 13–15 fps, text ~20 fps; music/sound/ambient together; maintainer: no stutter, sound in sync (benchmark logs)** | — |
 | Launcher / packaging | — | — | — | — | — | — |
 
 "CI" means the GitHub Actions job `ps5-cross-build` performs the step; check
@@ -141,3 +141,15 @@ click, both sticks and both triggers produced controller events; the PS and Crea
 are not delivered. A tone generated in code played through SDL audio (48 kHz, callback on
 time, heard by the maintainer) and a file round-trip on `/data/ksre-ps5/` passed and
 persisted across runs. Details: [experiments/02c-input-audio](../experiments/02c-input-audio/README.md).
+
+## Milestone 06b (video, audio, performance) in short
+
+An unattended benchmark overlay (debug only) measured KSRE on the console. All KSRE videos are
+VP9 1080p30 + Opus. Full-screen videos now hold 28–30 fps: the launcher sets Ren'Py's swap
+interval to 0, because the PS5 flip already waits for the vblank. With interval 1 they dropped
+to 19–25 fps. KSRE's camera function asked for a redraw every frame even with parallax off;
+the overlay stops that, which doubles transition speed (dissolve 9 → 16–19 fps) and lets still
+screens stop redrawing. Music, sound and ambient play together at the right rate. The rest of
+the slowness is software GL at 1080p: per-frame cost is in GL, not Python, and
+`LP_NUM_THREADS` and mipmaps do not help. Details:
+[ports/ksre](../ports/ksre/README.md#performance-06b).

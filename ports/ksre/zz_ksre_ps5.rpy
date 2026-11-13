@@ -43,3 +43,19 @@ define config.default_fullscreen = True
 init 998 python:
     mouse = Null()
     config.mouse_displayable = None
+
+# 06b: KSRE's camera (labels.rpy: `camera at defaultColorblind: function tf_parallax`) asks
+# for a redraw on every frame even while parallax is off (the default). On software GL that
+# keeps the CPU busy at 30 fps on a still screen and makes every transition re-render both of
+# its scenes each frame (console: dissolve 9 fps with it, 19 fps without). While parallax is
+# off the function now finishes (no more redraws); with parallax on, KSRE's own function runs
+# unchanged. Turning parallax on therefore takes effect at the next game start (the camera is
+# set in splashscreen_intro). Parallax follows the mouse, which the PS5 does not have.
+init 999 python:
+    _ksre_ps5_tf_parallax_ksre = tf_parallax
+
+    def tf_parallax(tf, st, at):
+        if persistent.parallax:
+            return _ksre_ps5_tf_parallax_ksre(tf, st, at)
+        tf.zoom = 1.0
+        return None

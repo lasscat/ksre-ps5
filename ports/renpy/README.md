@@ -52,7 +52,12 @@ directory as its argument. Console layout under `--root` (default `/data/ksre-ps
 (created). Defaults it sets unless already set (`--env KEY=VALUE` overrides):
 `RENPY_PATH_TO_SAVES=<root>/saves`, `RENPY_LOG_BASE=<root>/logs` (Ren'Py's `log.txt`,
 `traceback.txt`), `RENPY_RENDERER=gl2`, `RENPY_PLATFORM=ps5-x86_64`, `HOME`, `TMPDIR`,
-`SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS=1`.
+`SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS=1`, `RENPY_GL_VSYNC=0` (06b: the PS5 SDL/OSMesa flip
+already waits for the 60 Hz vblank; Ren'Py's swap interval 1 on top of it dropped VP9 1080p30
+videos to 19–25 fps, 0 keeps them at 29–30 fps).
+
+* `RENPY cpus` line (06b): `sysconf`, `sysctl hw.ncpu` and FFmpeg's `av_cpu_count()` (what
+  `ffmedia.c`'s `threads=auto` uses); 16 / 16 / 16 on the console.
 
 * stdout/stderr also go to `<root>/logs/launcher-last.log` (previous run: `launcher-prev.log`).
 * Start-up check: every imported symbol is looked up with `dlsym`; missing ones are printed as
